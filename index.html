@@ -1,0 +1,2998 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ALUNA V4 — Competição Educativa</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --noir: #050505;
+  --noir2: #0a0a0a;
+  --noir3: #111111;
+  --noir4: #1a1a1a;
+  --noir5: #222222;
+  --gold: #D4AF37;
+  --gold2: #F0D060;
+  --gold3: #B8960C;
+  --gold4: #8B6914;
+  --platinum: #E8E8E8;
+  --silver: #A8A8A8;
+  --red: #C0392B;
+  --red2: #E74C3C;
+  --green: #1A7A4A;
+  --green2: #27AE60;
+  --blue: #1A3A5C;
+  --white: #FAFAFA;
+  --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; height:100%; overflow:hidden; background:var(--noir); font-family:'Rajdhani', sans-serif; color:var(--white); }
+
+/* ═══════════════════════════════════════
+   CANVAS FAGULHAS
+═══════════════════════════════════════ */
+#sparkCanvas {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; z-index:0;
+}
+
+/* ═══════════════════════════════════════
+   ESTADOS
+═══════════════════════════════════════ */
+.state { display:none; position:fixed; inset:0; z-index:10; overflow-y:auto; overflow-x:hidden; }
+.state.active { display:flex; flex-direction:column; }
+
+/* ═══════════════════════════════════════
+   PRELOADER
+═══════════════════════════════════════ */
+#state-preloader {
+  align-items:center; justify-content:center;
+  background:var(--noir); flex-direction:column; gap:32px;
+}
+.preloader-ring {
+  width:120px; height:120px; position:relative;
+}
+.preloader-ring svg {
+  width:100%; height:100%; animation:ringRotate 2s linear infinite;
+}
+@keyframes ringRotate { to { transform:rotate(360deg); } }
+.preloader-ring svg circle {
+  fill:none; stroke:var(--gold); stroke-width:2;
+  stroke-dasharray:300; stroke-dashoffset:80;
+  stroke-linecap:round;
+}
+.preloader-logo-inner {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:'Cinzel', serif; font-size:28px; font-weight:900; color:var(--gold);
+  letter-spacing:4px;
+}
+.preloader-title {
+  font-family:'Cinzel', serif; font-size:14px; font-weight:400;
+  letter-spacing:8px; color:var(--silver); text-transform:uppercase;
+}
+.preloader-bar-wrap {
+  width:200px; height:2px; background:var(--noir4); border-radius:1px; overflow:hidden;
+}
+.preloader-bar {
+  height:100%; width:0; background:linear-gradient(90deg, var(--gold3), var(--gold2));
+  border-radius:1px; transition:width 0.05s linear;
+}
+.preloader-msg {
+  font-size:11px; letter-spacing:3px; color:var(--gold4); text-transform:uppercase;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* ═══════════════════════════════════════
+   TICKER
+═══════════════════════════════════════ */
+.ticker-wrap {
+  width:100%; overflow:hidden; background:var(--noir4);
+  border-bottom:1px solid var(--gold4); padding:6px 0;
+  flex-shrink:0; position:relative; z-index:20;
+}
+.ticker-inner {
+  display:inline-flex; white-space:nowrap;
+  animation:tickerAnim 30s linear infinite;
+}
+@keyframes tickerAnim { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ticker-item {
+  font-size:11px; letter-spacing:2px; color:var(--gold);
+  padding:0 32px; font-family:'Rajdhani', sans-serif; font-weight:500;
+}
+.ticker-sep { color:var(--gold4); }
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.app-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; background:rgba(5,5,5,0.95);
+  border-bottom:1px solid rgba(212,175,55,0.15);
+  flex-shrink:0; position:relative; z-index:20;
+}
+.header-logo {
+  font-family:'Cinzel', serif; font-size:20px; font-weight:900;
+  color:var(--gold); letter-spacing:3px; cursor:pointer;
+  user-select:none; position:relative;
+}
+.header-logo::after {
+  content:'V4'; position:absolute; top:-6px; right:-22px;
+  font-size:9px; color:var(--gold3); letter-spacing:1px;
+}
+.header-bal {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2);
+  border-radius:20px; padding:6px 14px;
+}
+.header-bal-icon { font-size:12px; color:var(--gold); }
+.header-bal-val {
+  font-size:14px; font-weight:700; color:var(--gold2);
+  letter-spacing:1px; transition:var(--trans);
+}
+
+/* ═══════════════════════════════════════
+   CARTÃO PLATINUM
+═══════════════════════════════════════ */
+.platinum-card {
+  margin:20px 16px;
+  background:linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 40%, #1f1a0a 70%, #0a0a0a 100%);
+  border-radius:16px; padding:24px;
+  border:1px solid rgba(212,175,55,0.3);
+  position:relative; overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,175,55,0.1);
+  flex-shrink:0;
+}
+.platinum-card::before {
+  content:''; position:absolute; top:-40%; right:-20%;
+  width:200px; height:200px;
+  background:radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%);
+  border-radius:50%; pointer-events:none;
+}
+.platinum-card::after {
+  content:''; position:absolute; inset:0;
+  background:repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(212,175,55,0.015) 2px, rgba(212,175,55,0.015) 4px);
+  pointer-events:none;
+}
+.card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.card-brand { font-family:'Cinzel', serif; font-size:11px; letter-spacing:4px; color:var(--gold3); }
+.card-type { font-size:10px; letter-spacing:3px; color:var(--silver); }
+.card-chip {
+  width:36px; height:28px; border-radius:4px;
+  background:linear-gradient(135deg, var(--gold3), var(--gold), var(--gold2));
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.card-chip::before {
+  content:''; position:absolute; top:50%; left:0; right:0;
+  height:1px; background:rgba(0,0,0,0.3);
+}
+.card-chip::after {
+  content:''; position:absolute; left:50%; top:0; bottom:0;
+  width:1px; background:rgba(0,0,0,0.3);
+}
+.card-holo {
+  width:32px; height:32px; border-radius:4px;
+  background:linear-gradient(45deg, #ff006688,#0066ff88,#00ff6688,#ff006688);
+  background-size:300% 300%; animation:holoShift 3s ease infinite;
+  opacity:0.7;
+}
+@keyframes holoShift {
+  0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%}
+}
+.card-balance-label { font-size:10px; letter-spacing:3px; color:var(--silver); margin-bottom:4px; }
+.card-balance-val {
+  font-family:'Cinzel', serif; font-size:28px; font-weight:700;
+  color:var(--gold2); letter-spacing:2px;
+}
+.card-balance-val span { font-size:13px; color:var(--gold4); margin-left:4px; }
+.card-footer { display:flex; justify-content:space-between; align-items:flex-end; margin-top:16px; }
+.card-id { font-size:11px; letter-spacing:2px; color:var(--gold4); font-family:'Rajdhani',sans-serif; }
+.card-id-val { font-size:13px; letter-spacing:3px; color:var(--silver); margin-top:2px; }
+.card-actions { display:flex; gap:8px; }
+.card-btn {
+  padding:6px 12px; border-radius:20px; font-size:10px;
+  letter-spacing:2px; font-weight:600; cursor:pointer; border:none;
+  transition:var(--trans); font-family:'Rajdhani',sans-serif;
+}
+.card-btn-dep {
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  color:var(--noir);
+}
+.card-btn-dep:hover { transform:scale(1.05); }
+.card-btn-lev {
+  background:transparent; color:var(--gold3);
+  border:1px solid var(--gold4);
+}
+
+/* ═══════════════════════════════════════
+   HOME
+═══════════════════════════════════════ */
+#state-home { background:var(--noir); }
+.home-scroll { flex:1; overflow-y:auto; padding-bottom:80px; }
+.section-title {
+  font-family:'Cinzel', serif; font-size:11px; letter-spacing:4px;
+  color:var(--gold4); text-transform:uppercase; padding:0 20px 12px;
+}
+.stats-row {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:10px; padding:0 16px 20px;
+}
+.stat-card {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.1);
+  border-radius:10px; padding:14px 10px; text-align:center;
+}
+.stat-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:var(--gold2); }
+.stat-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); margin-top:2px; }
+.quick-actions {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px; padding:0 16px 24px;
+}
+.qa-btn {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.12);
+  border-radius:12px; padding:16px; display:flex; flex-direction:column;
+  align-items:flex-start; gap:8px; cursor:pointer; transition:var(--trans);
+}
+.qa-btn:active { transform:scale(0.97); background:var(--noir4); }
+.qa-icon { font-size:22px; }
+.qa-label { font-size:12px; font-weight:600; letter-spacing:1px; color:var(--white); }
+.qa-sub { font-size:10px; color:var(--silver); }
+.leaderboard { padding:0 16px 24px; }
+.lb-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:10px;
+  background:var(--noir3); margin-bottom:8px;
+  border:1px solid rgba(212,175,55,0.06);
+}
+.lb-rank { font-family:'Cinzel',serif; font-size:16px; font-weight:700; width:24px; text-align:center; }
+.lb-rank.gold { color:var(--gold); }
+.lb-rank.silver { color:var(--silver); }
+.lb-rank.bronze { color:#CD7F32; }
+.lb-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold4), var(--gold3));
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:var(--noir); flex-shrink:0;
+}
+.lb-info { flex:1; }
+.lb-name { font-size:13px; font-weight:600; }
+.lb-pts { font-size:10px; color:var(--gold4); letter-spacing:1px; }
+.lb-val { font-family:'Cinzel',serif; font-size:14px; color:var(--gold2); font-weight:700; }
+
+/* ═══════════════════════════════════════
+   BOTTOM NAV
+═══════════════════════════════════════ */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  background:rgba(5,5,5,0.97); border-top:1px solid rgba(212,175,55,0.15);
+  display:flex; align-items:center; justify-content:space-around;
+  padding:8px 0 max(8px, env(safe-area-inset-bottom));
+}
+.nav-item {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:6px 12px; cursor:pointer; transition:var(--trans);
+  border-radius:8px; min-width:56px;
+}
+.nav-item.active .nav-icon { color:var(--gold); }
+.nav-item.active .nav-lbl { color:var(--gold); }
+.nav-icon { font-size:20px; color:var(--silver); transition:var(--trans); }
+.nav-lbl { font-size:9px; letter-spacing:1px; color:var(--silver); transition:var(--trans); }
+.nav-item:active { transform:scale(0.92); }
+
+/* ═══════════════════════════════════════
+   SALAS
+═══════════════════════════════════════ */
+#state-salas { background:var(--noir); }
+.salas-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.salas-header {
+  text-align:center; padding:16px 20px 24px;
+  font-family:'Cinzel',serif; font-size:11px;
+  letter-spacing:4px; color:var(--gold4);
+}
+.sala-card {
+  background:var(--noir3); border-radius:14px;
+  border:1px solid rgba(212,175,55,0.12); padding:20px;
+  margin-bottom:12px; cursor:pointer; transition:var(--trans);
+  display:flex; align-items:center; gap:16px;
+  position:relative; overflow:hidden;
+}
+.sala-card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:linear-gradient(180deg, var(--gold3), var(--gold4));
+  border-radius:3px 0 0 3px;
+}
+.sala-card:active { transform:scale(0.98); }
+.sala-card.locked { opacity:0.5; cursor:not-allowed; }
+.sala-card.locked::after {
+  content:'🔒'; position:absolute; top:12px; right:12px;
+  font-size:14px;
+}
+.sala-icon { font-size:32px; }
+.sala-info { flex:1; }
+.sala-name { font-family:'Cinzel',serif; font-size:14px; font-weight:600; color:var(--white); margin-bottom:2px; }
+.sala-desc { font-size:11px; color:var(--silver); letter-spacing:1px; }
+.sala-players { font-size:10px; color:var(--gold4); margin-top:4px; }
+.sala-prize {
+  text-align:right;
+}
+.sala-prize-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:var(--gold2); }
+.sala-prize-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); }
+
+/* ═══════════════════════════════════════
+   LOBBY
+═══════════════════════════════════════ */
+#state-lobby {
+  background:var(--noir); align-items:center; justify-content:center; flex-direction:column;
+}
+.lobby-inner { width:100%; max-width:360px; padding:20px; text-align:center; }
+.lobby-title {
+  font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:var(--gold);
+  letter-spacing:3px; margin-bottom:8px;
+}
+.lobby-sub { font-size:12px; letter-spacing:3px; color:var(--silver); margin-bottom:40px; }
+.lobby-countdown {
+  font-family:'Cinzel',serif; font-size:80px; font-weight:900;
+  color:var(--gold2); line-height:1; margin-bottom:8px;
+  text-shadow:0 0 40px rgba(212,175,55,0.4);
+  transition:color 0.3s;
+}
+.lobby-cd-lbl { font-size:10px; letter-spacing:4px; color:var(--silver); margin-bottom:32px; }
+.lobby-players {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.1);
+  border-radius:12px; padding:16px; margin-bottom:24px;
+}
+.lobby-players-title { font-size:10px; letter-spacing:3px; color:var(--gold4); margin-bottom:12px; }
+.lobby-list { display:flex; flex-direction:column; gap:6px; max-height:140px; overflow:hidden; }
+.lobby-player {
+  display:flex; align-items:center; gap:10px;
+  padding:6px 8px; border-radius:6px;
+  background:rgba(212,175,55,0.04);
+  animation:playerIn 0.3s ease;
+}
+@keyframes playerIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+.lobby-player-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--green2); flex-shrink:0;
+  animation:dotBlink 1.5s ease infinite;
+}
+@keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.lobby-player-name { font-size:12px; font-weight:600; flex:1; text-align:left; }
+.lobby-player-badge {
+  font-size:9px; letter-spacing:1px; color:var(--gold4);
+  background:rgba(212,175,55,0.08); padding:2px 6px; border-radius:10px;
+}
+.lobby-room-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2);
+  border-radius:20px; padding:8px 20px;
+  font-size:12px; letter-spacing:2px; color:var(--gold3);
+}
+
+/* ═══════════════════════════════════════
+   JOGO
+═══════════════════════════════════════ */
+#state-jogo {
+  background:var(--noir); flex-direction:column;
+}
+.jogo-header {
+  padding:16px 20px; display:flex; align-items:center; gap:12px;
+  border-bottom:1px solid rgba(212,175,55,0.1); flex-shrink:0;
+}
+.jogo-progress {
+  flex:1; height:3px; background:var(--noir4); border-radius:2px; overflow:hidden;
+}
+.jogo-progress-fill {
+  height:100%; background:linear-gradient(90deg, var(--gold3), var(--gold2));
+  border-radius:2px; transition:width 0.5s ease;
+}
+.jogo-qnum { font-size:11px; letter-spacing:2px; color:var(--silver); white-space:nowrap; }
+.jogo-score-hdr { font-family:'Cinzel',serif; font-size:14px; color:var(--gold2); font-weight:700; white-space:nowrap; }
+.jogo-body { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; }
+.jogo-timer-wrap {
+  display:flex; align-items:center; justify-content:center; margin-bottom:24px;
+}
+.jogo-timer-ring { width:80px; height:80px; position:relative; flex-shrink:0; }
+.jogo-timer-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.jogo-timer-ring svg circle {
+  fill:none; stroke-width:4; stroke-linecap:round;
+}
+.jogo-timer-ring svg .bg { stroke:var(--noir4); }
+.jogo-timer-ring svg .fg {
+  stroke:var(--gold);
+  stroke-dasharray:220;
+  transition:stroke-dashoffset 0.9s linear, stroke 0.3s;
+}
+.jogo-timer-num {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:var(--gold);
+  transition:color 0.3s;
+}
+.timer-alert .jogo-timer-num { color:#F39C12; }
+.timer-danger .jogo-timer-num { color:var(--red2); }
+.timer-danger .jogo-timer-ring svg .fg { stroke:var(--red2); }
+.timer-danger { animation:shake 0.3s ease infinite; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-3px)}
+  75%{transform:translateX(3px)}
+}
+.jogo-categoria {
+  font-size:10px; letter-spacing:3px; color:var(--gold4);
+  text-align:center; margin-bottom:16px; text-transform:uppercase;
+}
+.jogo-pergunta {
+  font-family:'Cormorant Garamond', serif; font-size:20px;
+  font-weight:400; line-height:1.5; text-align:center;
+  color:var(--white); margin-bottom:28px; flex:1;
+}
+.opcoes { display:flex; flex-direction:column; gap:10px; }
+.opcao {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.12);
+  border-radius:12px; padding:16px 18px;
+  cursor:pointer; transition:var(--trans);
+  display:flex; align-items:center; gap:12px;
+  user-select:none;
+}
+.opcao:active:not(.disabled) { transform:scale(0.98); }
+.opcao.disabled { pointer-events:none; }
+.opcao-letra {
+  width:28px; height:28px; border-radius:50%; flex-shrink:0;
+  background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--gold4);
+  letter-spacing:0; transition:var(--trans);
+}
+.opcao-texto { font-size:14px; font-weight:500; line-height:1.3; transition:color 0.2s; }
+.opcao.correct { background:rgba(26,122,74,0.2); border-color:var(--green2); }
+.opcao.correct .opcao-letra { background:var(--green2); color:var(--white); border-color:var(--green2); }
+.opcao.wrong { background:rgba(192,57,43,0.2); border-color:var(--red2); }
+.opcao.wrong .opcao-letra { background:var(--red2); color:var(--white); border-color:var(--red2); }
+.opcao.selected { border-color:var(--gold); }
+.opcao.selected .opcao-letra { background:var(--gold); color:var(--noir); border-color:var(--gold); }
+
+/* ═══════════════════════════════════════
+   RESULTADO
+═══════════════════════════════════════ */
+#state-resultado {
+  background:var(--noir); align-items:center; justify-content:center; flex-direction:column;
+}
+.resultado-inner {
+  width:100%; max-width:360px; padding:32px 20px;
+  text-align:center;
+}
+.resultado-emoji { font-size:72px; margin-bottom:16px; animation:bounceIn 0.6s ease; }
+@keyframes bounceIn {
+  0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)}
+}
+.resultado-titulo {
+  font-family:'Cinzel',serif; font-size:28px; font-weight:900;
+  color:var(--gold); letter-spacing:3px; margin-bottom:8px;
+}
+.resultado-sub { font-size:13px; color:var(--silver); margin-bottom:32px; letter-spacing:1px; }
+.resultado-stats {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.12);
+  border-radius:14px; padding:20px; margin-bottom:24px;
+}
+.res-stat-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+.res-stat-row + .res-stat-row { border-top:1px solid rgba(255,255,255,0.05); }
+.res-stat-lbl { font-size:11px; letter-spacing:2px; color:var(--silver); }
+.res-stat-val { font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:var(--gold2); }
+.resultado-prize {
+  background:linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04));
+  border:1px solid rgba(212,175,55,0.25); border-radius:14px;
+  padding:20px; margin-bottom:28px;
+}
+.resultado-prize-lbl { font-size:10px; letter-spacing:3px; color:var(--gold4); margin-bottom:6px; }
+.resultado-prize-val {
+  font-family:'Cinzel',serif; font-size:36px; font-weight:900;
+  color:var(--gold2); animation:countUp 0.8s ease;
+}
+@keyframes countUp { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+.resultado-btns { display:flex; flex-direction:column; gap:10px; }
+.btn-primary {
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  color:var(--noir); border:none; border-radius:12px;
+  padding:16px; font-size:13px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; transition:var(--trans);
+  font-family:'Rajdhani',sans-serif; text-transform:uppercase;
+}
+.btn-primary:active { transform:scale(0.97); }
+.btn-secondary {
+  background:transparent; color:var(--gold3);
+  border:1px solid rgba(212,175,55,0.25); border-radius:12px;
+  padding:14px; font-size:12px; font-weight:600;
+  letter-spacing:2px; cursor:pointer; transition:var(--trans);
+  font-family:'Rajdhani',sans-serif; text-transform:uppercase;
+}
+.btn-secondary:active { transform:scale(0.97); }
+
+/* ═══════════════════════════════════════
+   MARKETPLACE
+═══════════════════════════════════════ */
+#state-market { background:var(--noir); }
+.market-scroll { flex:1; overflow-y:auto; padding:16px 16px 80px; }
+.market-banner {
+  background:linear-gradient(135deg, #1a1200, #0d0d0d);
+  border:1px solid rgba(212,175,55,0.2); border-radius:14px;
+  padding:20px; margin-bottom:20px; text-align:center;
+}
+.market-banner-title {
+  font-family:'Cinzel',serif; font-size:14px; letter-spacing:3px;
+  color:var(--gold); margin-bottom:4px;
+}
+.market-banner-sub { font-size:11px; color:var(--silver); letter-spacing:1px; }
+.books-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.book-card {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.1);
+  border-radius:12px; overflow:hidden; cursor:pointer; transition:var(--trans);
+}
+.book-card:active { transform:scale(0.97); }
+.book-cover {
+  aspect-ratio:3/4; width:100%; display:flex; align-items:center; justify-content:center;
+  font-size:48px; position:relative; overflow:hidden;
+}
+.book-cover-inner {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:16px; text-align:center;
+}
+.book-cover-title {
+  font-family:'Cormorant Garamond',serif; font-size:13px; font-weight:600;
+  line-height:1.3; color:var(--white);
+}
+.book-cover-author { font-size:9px; color:rgba(255,255,255,0.6); margin-top:4px; letter-spacing:1px; }
+.book-info { padding:12px; }
+.book-title { font-size:12px; font-weight:600; margin-bottom:2px; line-height:1.3; }
+.book-author { font-size:10px; color:var(--silver); margin-bottom:8px; }
+.book-footer { display:flex; align-items:center; justify-content:space-between; }
+.book-price { font-family:'Cinzel',serif; font-size:13px; color:var(--gold2); font-weight:700; }
+.book-btn {
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  color:var(--noir); border:none; border-radius:20px;
+  padding:5px 10px; font-size:9px; font-weight:700;
+  letter-spacing:1px; cursor:pointer;
+  font-family:'Rajdhani',sans-serif;
+}
+
+/* ═══════════════════════════════════════
+   ADMIN
+═══════════════════════════════════════ */
+#state-admin { background:var(--noir); }
+.admin-scroll { flex:1; overflow-y:auto; padding:0 16px 80px; }
+.admin-header-bar {
+  background:rgba(212,175,55,0.05); border-bottom:1px solid rgba(212,175,55,0.2);
+  padding:16px 20px; text-align:center;
+}
+.admin-title { font-family:'Cinzel',serif; font-size:14px; letter-spacing:4px; color:var(--gold); }
+.admin-sub { font-size:10px; letter-spacing:2px; color:var(--gold4); margin-top:2px; }
+.admin-section { margin-top:20px; }
+.admin-section-title {
+  font-size:10px; letter-spacing:3px; color:var(--gold4);
+  text-transform:uppercase; padding-bottom:10px;
+  border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:12px;
+}
+.admin-toggle-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; background:var(--noir3); border-radius:10px;
+  margin-bottom:8px; border:1px solid rgba(212,175,55,0.06);
+}
+.admin-toggle-lbl { font-size:13px; font-weight:500; }
+.admin-toggle-sub { font-size:10px; color:var(--silver); }
+.toggle {
+  width:44px; height:24px; border-radius:12px; background:var(--noir4);
+  position:relative; cursor:pointer; transition:background 0.3s;
+  border:1px solid rgba(255,255,255,0.1); flex-shrink:0;
+}
+.toggle.on { background:var(--gold3); }
+.toggle::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:18px; height:18px; border-radius:50%;
+  background:var(--white); transition:transform 0.3s;
+}
+.toggle.on::after { transform:translateX(20px); }
+.admin-input {
+  width:100%; background:var(--noir3); border:1px solid rgba(212,175,55,0.15);
+  border-radius:10px; padding:12px 14px; color:var(--white);
+  font-size:13px; font-family:'Rajdhani',sans-serif;
+  outline:none; margin-bottom:8px;
+}
+.admin-input:focus { border-color:var(--gold3); }
+.admin-btn {
+  background:linear-gradient(135deg, var(--gold3), var(--gold));
+  color:var(--noir); border:none; border-radius:10px;
+  padding:12px 20px; font-size:12px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; font-family:'Rajdhani',sans-serif;
+  width:100%; margin-bottom:8px;
+}
+.admin-books-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.admin-book-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; background:var(--noir3); border-radius:8px;
+  border:1px solid rgba(212,175,55,0.06);
+}
+.admin-book-name { flex:1; font-size:12px; }
+.admin-book-price { font-size:11px; color:var(--gold3); }
+.admin-book-del {
+  width:24px; height:24px; border-radius:50%;
+  background:rgba(192,57,43,0.2); border:1px solid var(--red);
+  color:var(--red2); font-size:12px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.sala-lock-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; background:var(--noir3); border-radius:8px;
+  margin-bottom:6px; border:1px solid rgba(212,175,55,0.06);
+}
+.sala-lock-name { font-size:13px; font-weight:600; }
+.sala-lock-price { font-size:11px; color:var(--gold4); }
+.maintenance-overlay {
+  position:fixed; inset:0; z-index:999;
+  background:rgba(5,5,5,0.97); display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:16px;
+}
+.maintenance-overlay.active { display:flex; }
+.maintenance-title {
+  font-family:'Cinzel',serif; font-size:24px; letter-spacing:4px;
+  color:var(--gold); text-align:center;
+}
+.maintenance-sub { font-size:12px; letter-spacing:2px; color:var(--silver); }
+.admin-btn-red {
+  background:linear-gradient(135deg, #8B0000, var(--red));
+  color:var(--white); border:none; border-radius:10px;
+  padding:12px 20px; font-size:12px; font-weight:700;
+  letter-spacing:2px; cursor:pointer; font-family:'Rajdhani',sans-serif;
+  width:100%; margin-bottom:8px;
+}
+
+/* ═══════════════════════════════════════
+   MODAL SENHA ADMIN
+═══════════════════════════════════════ */
+.modal-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.85); display:none;
+  align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal-overlay.active { display:flex; }
+.modal-box {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.2);
+  border-radius:16px; padding:28px 24px; width:100%; max-width:320px;
+  text-align:center;
+}
+.modal-title {
+  font-family:'Cinzel',serif; font-size:16px; letter-spacing:3px;
+  color:var(--gold); margin-bottom:8px;
+}
+.modal-sub { font-size:11px; color:var(--silver); margin-bottom:20px; }
+.modal-input {
+  width:100%; background:var(--noir4); border:1px solid rgba(212,175,55,0.2);
+  border-radius:10px; padding:14px; color:var(--white); font-size:16px;
+  text-align:center; letter-spacing:4px; outline:none;
+  font-family:'Cinzel',serif; margin-bottom:16px;
+}
+.modal-input:focus { border-color:var(--gold3); }
+.modal-btns { display:flex; gap:10px; }
+.modal-btns button { flex:1; padding:12px; border-radius:10px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; border:none; }
+.modal-confirm { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); }
+.modal-cancel { background:var(--noir4); color:var(--silver); border:1px solid rgba(255,255,255,0.1) !important; }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+.toast {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-80px);
+  z-index:9999; background:var(--noir3); border:1px solid rgba(212,175,55,0.3);
+  border-radius:20px; padding:10px 20px;
+  font-size:12px; letter-spacing:1px; color:var(--gold2);
+  white-space:nowrap; transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.success { border-color:var(--green2); color:var(--green2); }
+.toast.error { border-color:var(--red2); color:var(--red2); }
+
+/* ═══════════════════════════════════════
+   COIN ANIMATION
+═══════════════════════════════════════ */
+.coin-anim {
+  position:fixed; pointer-events:none; z-index:8000;
+  font-family:'Cinzel',serif; font-size:16px; font-weight:700;
+  color:var(--gold2); text-shadow:0 0 10px var(--gold);
+  animation:coinFloat 1.5s ease forwards;
+}
+@keyframes coinFloat {
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-80px) scale(0.5)}
+}
+
+.book-cover-wrap {
+  position:relative; overflow:hidden; border-radius:6px 8px 8px 6px;
+  box-shadow:4px 4px 12px rgba(0,0,0,0.6), -1px 0 4px rgba(0,0,0,0.4);
+}
+.book-card-featured {
+  border-color:rgba(212,175,55,0.35) !important;
+  box-shadow:0 0 16px rgba(212,175,55,0.15);
+}
+.book-featured-badge {
+  position:absolute; top:8px; right:8px;
+  background:linear-gradient(135deg,#B8960C,#F0D060);
+  color:#050505; font-size:8px; font-weight:700;
+  padding:3px 7px; border-radius:10px; letter-spacing:1px;
+}
+
+/* ═══════════════════════════════════════
+   GLOBAL FIXED FOOTER
+═══════════════════════════════════════ */
+.global-footer {
+  position:fixed; bottom:0; left:0; right:0;
+  text-align:center; padding:3px 0 4px;
+  pointer-events:none; z-index:200;
+  font-size:8px; letter-spacing:2px; color:rgba(212,175,55,0.45);
+  background:rgba(5,5,5,0.7);
+  font-family:'Rajdhani',sans-serif;
+  text-transform:uppercase;
+}
+
+/* ═══════════════════════════════════════
+   TEMA CLARO
+═══════════════════════════════════════ */
+body.theme-light {
+
+/* SOBRE NÓS */
+#state-sobre { background:var(--noir); }
+.sobre-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.sobre-hero {
+  text-align:center; padding:24px 0 20px;
+  border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:24px;
+}
+.sobre-hero-title {
+  font-family:'Cinzel',serif; font-size:20px; font-weight:700;
+  color:var(--gold); letter-spacing:4px; margin-bottom:8px;
+}
+.sobre-hero-sub { font-size:11px; letter-spacing:3px; color:var(--gold4); }
+.sobre-section { margin-bottom:28px; }
+.sobre-section-title {
+  font-family:'Cinzel',serif; font-size:12px; letter-spacing:3px;
+  color:var(--gold3); text-transform:uppercase; margin-bottom:12px;
+  padding-bottom:6px; border-bottom:1px solid rgba(212,175,55,0.12);
+}
+.sobre-text {
+  font-family:'Cormorant Garamond',serif; font-size:15px;
+  line-height:1.75; color:rgba(250,250,250,0.85);
+  font-weight:400;
+}
+.sobre-text + .sobre-text { margin-top:12px; }
+.sobre-quote {
+  border-left:2px solid var(--gold3); padding:12px 16px;
+  margin:16px 0; background:rgba(212,175,55,0.04);
+  font-family:'Cormorant Garamond',serif; font-size:14px;
+  font-style:italic; color:var(--gold2); line-height:1.6;
+  border-radius:0 8px 8px 0;
+}
+.sobre-brand-box {
+  background:linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02));
+  border:1px solid rgba(212,175,55,0.2); border-radius:12px;
+  padding:20px; text-align:center; margin-top:24px;
+}
+.sobre-brand-name {
+  font-family:'Cinzel',serif; font-size:14px; letter-spacing:3px;
+  color:var(--gold); margin-bottom:6px;
+}
+.sobre-brand-ceo { font-size:11px; letter-spacing:2px; color:var(--silver); }
+
+/* POLÍTICA DE UTILIZAÇÃO */
+#state-politica { background:var(--noir); }
+.politica-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.politica-hero {
+  text-align:center; padding:24px 0 20px;
+  border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:24px;
+}
+.politica-hero-title {
+  font-family:'Cinzel',serif; font-size:18px; font-weight:700;
+  color:var(--gold); letter-spacing:3px; margin-bottom:8px;
+}
+.politica-hero-sub { font-size:10px; letter-spacing:2px; color:var(--gold4); }
+.politica-section { margin-bottom:24px; }
+.politica-section-title {
+  font-family:'Cinzel',serif; font-size:11px; letter-spacing:3px;
+  color:var(--gold3); text-transform:uppercase; margin-bottom:12px;
+  padding-bottom:6px; border-bottom:1px solid rgba(212,175,55,0.12);
+}
+.politica-rule {
+  display:flex; gap:10px; align-items:flex-start;
+  padding:10px 12px; background:var(--noir3);
+  border-radius:8px; margin-bottom:8px;
+  border:1px solid rgba(212,175,55,0.06);
+}
+.politica-rule-icon { font-size:14px; flex-shrink:0; margin-top:1px; }
+.politica-rule-text { font-size:12px; line-height:1.5; color:var(--platinum); }
+.politica-age-box {
+  background:var(--noir3); border-radius:12px; overflow:hidden;
+  border:1px solid rgba(212,175,55,0.1); margin-bottom:12px;
+}
+.politica-age-header {
+  background:rgba(212,175,55,0.08); padding:10px 14px;
+  font-size:11px; font-weight:700; letter-spacing:2px; color:var(--gold);
+}
+.politica-age-body { padding:12px 14px; font-size:12px; line-height:1.6; color:var(--platinum); }
+
+/* ADMIN TABS */
+.admin-tabs {
+  display:flex; overflow-x:auto; gap:0;
+  background:rgba(212,175,55,0.04);
+  border-bottom:1px solid rgba(212,175,55,0.15);
+  flex-shrink:0; padding:0 4px;
+}
+.admin-tabs::-webkit-scrollbar { height:2px; }
+.admin-tab {
+  padding:10px 14px; font-size:10px; letter-spacing:2px;
+  color:var(--silver); cursor:pointer; white-space:nowrap;
+  border-bottom:2px solid transparent; transition:var(--trans);
+  font-family:'Rajdhani',sans-serif; font-weight:600;
+}
+.admin-tab.active { color:var(--gold); border-bottom-color:var(--gold3); }
+.admin-tab-panel { display:none; }
+.admin-tab-panel.active { display:block; }
+.admin-stat-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;
+}
+.admin-stat-card {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.1);
+  border-radius:10px; padding:14px; text-align:center;
+}
+.admin-stat-val {
+  font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:var(--gold2);
+}
+.admin-stat-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); margin-top:4px; }
+.admin-user-row {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; background:var(--noir3); border-radius:8px;
+  margin-bottom:8px; border:1px solid rgba(212,175,55,0.06);
+}
+.admin-user-id { font-size:11px; color:var(--gold3); flex:1; }
+.admin-user-bal { font-size:12px; font-weight:700; color:var(--gold2); }
+.admin-q-item {
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.08);
+  border-radius:10px; padding:12px 14px; margin-bottom:10px;
+}
+.admin-q-cat { font-size:9px; letter-spacing:2px; color:var(--gold4); margin-bottom:4px; }
+.admin-q-text { font-size:12px; line-height:1.4; margin-bottom:8px; }
+.admin-q-answers { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.admin-q-ans { font-size:10px; padding:4px 8px; border-radius:4px; background:var(--noir4); color:var(--silver); }
+.admin-q-ans.correct-ans { background:rgba(26,122,74,0.2); color:var(--green2); }
+.admin-ai-box {
+  background:rgba(212,175,55,0.04); border:1px solid rgba(212,175,55,0.15);
+  border-radius:10px; padding:14px; margin-bottom:12px;
+}
+.admin-ai-lbl { font-size:9px; letter-spacing:2px; color:var(--gold4); margin-bottom:8px; }
+.admin-textarea {
+  width:100%; background:var(--noir3); border:1px solid rgba(212,175,55,0.15);
+  border-radius:10px; padding:12px 14px; color:var(--white);
+  font-size:12px; font-family:'Rajdhani',sans-serif;
+  outline:none; margin-bottom:8px; resize:vertical; min-height:80px;
+}
+.admin-textarea:focus { border-color:var(--gold3); }
+.admin-param-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px; background:var(--noir3); border-radius:8px;
+  margin-bottom:8px; border:1px solid rgba(212,175,55,0.06);
+}
+.admin-param-lbl { font-size:12px; font-weight:500; }
+.admin-param-sub { font-size:10px; color:var(--silver); }
+.admin-param-val { font-family:'Cinzel',serif; font-size:14px; color:var(--gold2); }
+.admin-param-input {
+  width:80px; background:var(--noir4); border:1px solid rgba(212,175,55,0.2);
+  border-radius:6px; padding:6px 10px; color:var(--white);
+  font-size:13px; font-family:'Cinzel',sans-serif; outline:none; text-align:center;
+}
+.admin-param-input:focus { border-color:var(--gold3); }
+.admin-note {
+  font-size:10px; letter-spacing:1px; color:var(--gold4);
+  background:rgba(212,175,55,0.04); border-radius:8px; padding:10px 12px;
+  margin-top:8px; border:1px solid rgba(212,175,55,0.08);
+}
+  --noir:#F5F5F0; --noir2:#EBEBEB; --noir3:#E0E0D8;
+  --noir4:#D0D0C8; --noir5:#C0C0B8; --white:#111111;
+  --silver:#555555;
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════ */
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:var(--noir); }
+::-webkit-scrollbar-thumb { background:var(--gold4); border-radius:2px; }
+
+/* ═══════════════════════════════════════
+   HERO PRIMARY BUTTONS
+═══════════════════════════════════════ */
+.hero-actions {
+  padding:16px 16px 8px; display:flex; flex-direction:column; gap:12px;
+}
+.hero-btn {
+  width:100%; border:none; border-radius:14px; padding:22px 20px;
+  display:flex; align-items:center; gap:14px; cursor:pointer;
+  transition:var(--trans); position:relative; overflow:hidden;
+}
+.hero-btn:active { transform:scale(0.97); }
+.hero-btn-compete {
+  background:linear-gradient(135deg, var(--gold3), var(--gold), var(--gold2));
+  box-shadow:0 4px 24px rgba(212,175,55,0.35);
+}
+.hero-btn-free {
+  background:linear-gradient(135deg, #1A3A5C, #234E78, #2D6494);
+  border:1px solid rgba(212,175,55,0.25);
+  box-shadow:0 4px 20px rgba(26,58,92,0.4);
+}
+.hero-btn-icon { font-size:28px; flex-shrink:0; }
+.hero-btn-text { text-align:left; }
+.hero-btn-title {
+  font-family:'Cinzel',serif; font-size:15px; font-weight:700;
+  letter-spacing:2px; line-height:1.2;
+}
+.hero-btn-compete .hero-btn-title { color:var(--noir); }
+.hero-btn-free .hero-btn-title { color:var(--gold2); }
+.hero-btn-sub {
+  font-size:10px; letter-spacing:1px; margin-top:2px;
+}
+.hero-btn-compete .hero-btn-sub { color:rgba(5,5,5,0.7); }
+.hero-btn-free .hero-btn-sub { color:rgba(255,255,255,0.6); }
+.hero-btn-badge {
+  position:absolute; top:8px; right:12px; font-size:8px;
+  letter-spacing:2px; font-weight:700; padding:3px 8px;
+  border-radius:10px;
+}
+.hero-btn-compete .hero-btn-badge { background:rgba(5,5,5,0.15); color:var(--noir); }
+.hero-btn-free .hero-btn-badge { background:rgba(212,175,55,0.15); color:var(--gold); }
+
+/* FREE MODE INDICATOR */
+.free-mode-bar {
+  display:none; align-items:center; justify-content:center; gap:8px;
+  padding:6px 0; background:rgba(26,58,92,0.3);
+  border-bottom:1px solid rgba(45,100,148,0.4);
+  font-size:10px; letter-spacing:2px; color:#5BA3E0;
+  flex-shrink:0;
+}
+.free-mode-bar.active { display:flex; }
+
+/* SECONDARY OPTIONS COLLAPSIBLE */
+.secondary-section { padding:0 16px 20px; }
+.secondary-toggle {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px; cursor:pointer; border-radius:10px;
+  background:var(--noir3); border:1px solid rgba(212,175,55,0.06);
+  margin-bottom:10px; transition:var(--trans);
+}
+.secondary-toggle:active { transform:scale(0.97); }
+.secondary-toggle-lbl {
+  font-size:11px; letter-spacing:2px; color:var(--silver);
+}
+.secondary-toggle-arrow {
+  font-size:10px; color:var(--gold4); transition:transform 0.3s;
+}
+.secondary-toggle.open .secondary-toggle-arrow { transform:rotate(180deg); }
+.secondary-grid {
+  display:none; grid-template-columns:1fr 1fr; gap:10px;
+}
+.secondary-grid.open { display:grid; }
+.secondary-grid .qa-btn {
+  opacity:0.7; border-color:rgba(212,175,55,0.06);
+}
+.secondary-grid .qa-icon { font-size:18px; }
+.secondary-grid .qa-label { font-size:11px; }
+
+/* BRANDING FOOTER */
+.branding-footer {
+  position:fixed; bottom:56px; left:0; right:0;
+  text-align:center; padding:4px 0;
+  pointer-events:none; z-index:90;
+  font-size:8px; letter-spacing:2px; color:var(--gold4);
+  opacity:0.35; font-family:'Rajdhani',sans-serif;
+  background:linear-gradient(transparent, rgba(5,5,5,0.6));
+}
+
+/* ═══════════════════════════════════════
+   LOGIN / AUTH
+═══════════════════════════════════════ */
+.login-field { margin-bottom:12px; }
+.login-field label {
+  display:block; font-size:10px; letter-spacing:2px; color:var(--gold4);
+  margin-bottom:6px; text-transform:uppercase;
+}
+.login-field .modal-input { width:100%; }
+.login-error {
+  color:var(--red2); font-size:11px; letter-spacing:1px;
+  margin-bottom:10px; display:none; text-align:center;
+}
+.login-error.show { display:block; }
+.login-spinner {
+  display:none; text-align:center; padding:12px;
+  font-size:11px; letter-spacing:2px; color:var(--gold3);
+}
+.login-spinner.show { display:block; }
+.admin-logout-btn {
+  padding:8px 16px; border-radius:20px; font-size:10px;
+  letter-spacing:2px; font-weight:600; cursor:pointer;
+  background:transparent; color:var(--red2);
+  border:1px solid rgba(231,76,60,0.3);
+  font-family:'Rajdhani',sans-serif; transition:var(--trans);
+}
+.admin-logout-btn:hover { background:rgba(231,76,60,0.1); }
+</style>
+</head>
+<body>
+
+<!-- GLOBAL FOOTER -->
+<div class="global-footer">Grupo AGEA COMERCIAL &nbsp;•&nbsp; CEO: Adelino Graça</div>
+
+<!-- CANVAS -->
+<canvas id="sparkCanvas"></canvas>
+
+<!-- MAINTENANCE OVERLAY -->
+<div class="maintenance-overlay" id="maintenanceOverlay">
+  <div style="font-size:48px">🔧</div>
+  <div class="maintenance-title">EM MANUTENÇÃO</div>
+  <div class="maintenance-sub">Voltamos em breve</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL ADMIN -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-box">
+    <div class="modal-title">ACESSO RESTRITO</div>
+    <div class="modal-sub">Autenticação de Administrador — Supabase Auth</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-field">
+      <label>E-MAIL</label>
+      <input type="email" class="modal-input" id="adminEmailInput" placeholder="admin@exemplo.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>SENHA</label>
+      <input type="password" class="modal-input" id="adminPwdInput" placeholder="••••••" autocomplete="current-password">
+    </div>
+    <div class="login-spinner" id="loginSpinner">A AUTENTICAR...</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeAdminModal()">CANCELAR</button>
+      <button class="modal-confirm" id="loginBtn" onclick="adminLogin()">ENTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PRELOADER
+═══════════════════════════════════════ -->
+<div class="state active" id="state-preloader">
+  <div class="preloader-ring">
+    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50"/></svg>
+    <div class="preloader-logo-inner">A</div>
+  </div>
+  <div class="preloader-title">ALUNA</div>
+  <div class="preloader-bar-wrap">
+    <div class="preloader-bar" id="preloaderBar"></div>
+  </div>
+  <div class="preloader-msg" id="preloaderMsg">A INICIALIZAR SISTEMA...</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     HOME
+═══════════════════════════════════════ -->
+<div class="state" id="state-home">
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-inner" id="tickerInner">
+      <span class="ticker-item">🏆 Anónimo ganhou 2.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🎯 Nova sala aberta: 1.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📚 Novo livro: Manual de Liderança <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🔥 500 jogadores activos hoje <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">💰 Total pago este mês: 85.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Anónimo ganhou 2.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🎯 Nova sala aberta: 1.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📚 Novo livro: Manual de Liderança <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🔥 500 jogadores activos hoje <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">💰 Total pago este mês: 85.000 Kz <span class="ticker-sep">◆</span></span>
+    </div>
+  </div>
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-logo" id="logoBtn">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalance">0 Kz</span>
+    </div>
+  </div>
+  <!-- SCROLL -->
+  <div class="home-scroll">
+    <!-- PLATINUM CARD -->
+    <div class="platinum-card">
+      <div class="card-header">
+        <div>
+          <div class="card-brand">ALUNA</div>
+          <div class="card-type">PLATINUM MEMBER</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="card-chip"></div>
+          <div class="card-holo"></div>
+        </div>
+      </div>
+      <div class="card-balance-label">SALDO DISPONÍVEL</div>
+      <div class="card-balance-val" id="cardBalance">0<span>Kz</span></div>
+      <div class="card-footer">
+        <div>
+          <div class="card-id">ID DO UTILIZADOR</div>
+          <div class="card-id-val" id="cardUserId">ANA-0000</div>
+        </div>
+        <div class="card-actions">
+          <button class="card-btn card-btn-dep" onclick="handleDeposit()">RECARREGAR</button>
+          <button class="card-btn card-btn-lev" onclick="handleWithdraw()">LEVANTAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ★ HERO PRIMARY BUTTONS ★ -->
+    <div class="hero-actions">
+      <div class="hero-btn hero-btn-compete" onclick="enterCompetitionMode()">
+        <div class="hero-btn-icon">⚔️</div>
+        <div class="hero-btn-text">
+          <div class="hero-btn-title">JOGAR PARA COMPETIR</div>
+          <div class="hero-btn-sub">Modo competição — ganha prémios reais</div>
+        </div>
+        <div class="hero-btn-badge">💰 PRÉMIOS</div>
+      </div>
+      <div class="hero-btn hero-btn-free" onclick="enterFreeMode()">
+        <div class="hero-btn-icon">🎓</div>
+        <div class="hero-btn-text">
+          <div class="hero-btn-title">JOGAR GRATUITAMENTE</div>
+          <div class="hero-btn-sub">Modo treino — pratica sem risco</div>
+        </div>
+        <div class="hero-btn-badge">GRÁTIS</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section-title">— ESTATÍSTICAS —</div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="statJogos">0</div>
+        <div class="stat-lbl">PARTIDAS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statVit">0</div>
+        <div class="stat-lbl">VITÓRIAS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statGanhos">0</div>
+        <div class="stat-lbl">Kz GANHOS</div>
+      </div>
+    </div>
+
+    <!-- SECONDARY OPTIONS -->
+    <div class="secondary-section">
+      <div class="secondary-toggle" id="secondaryToggle" onclick="toggleSecondaryActions()">
+        <span class="secondary-toggle-lbl">MAIS OPÇÕES</span>
+        <span class="secondary-toggle-arrow">▼</span>
+      </div>
+      <div class="secondary-grid" id="secondaryGrid">
+        <div class="qa-btn" onclick="goTo('market')">
+          <div class="qa-icon">📚</div>
+          <div class="qa-label">LIVROS</div>
+          <div class="qa-sub">Marketplace</div>
+        </div>
+        <div class="qa-btn" onclick="handleDeposit()">
+          <div class="qa-icon">💳</div>
+          <div class="qa-label">DEPOSITAR</div>
+          <div class="qa-sub">Via Multicaixa</div>
+        </div>
+        <div class="qa-btn" onclick="handleWithdraw()">
+          <div class="qa-icon">🏦</div>
+          <div class="qa-label">LEVANTAR</div>
+          <div class="qa-sub">Para conta bancária</div>
+        </div>
+        <div class="qa-btn" onclick="goTo('salas')">
+          <div class="qa-icon">🏛️</div>
+          <div class="qa-label">SALAS</div>
+          <div class="qa-sub">Ver todas as salas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="section-title">— RANKING —</div>
+    <div class="leaderboard" id="leaderboard"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goTo('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-lbl">INÍCIO</div>
+    </div>
+    <div class="nav-item" onclick="goTo('salas')">
+      <div class="nav-icon">⚔️</div>
+      <div class="nav-lbl">SALAS</div>
+    </div>
+    <div class="nav-item" onclick="goTo('market')">
+      <div class="nav-icon">📚</div>
+      <div class="nav-lbl">LIVROS</div>
+    </div>
+    <div class="nav-item" onclick="goTo('sobre')">
+      <div class="nav-icon">ℹ️</div>
+      <div class="nav-lbl">SOBRE</div>
+    </div>
+    <div class="nav-item" onclick="goTo('politica')">
+      <div class="nav-icon">⚖️</div>
+      <div class="nav-lbl">POLÍTICA</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SALAS
+═══════════════════════════════════════ -->
+<div class="state" id="state-salas">
+  <div class="app-header">
+    <div class="header-logo" id="logoBtn2">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalance2">0 Kz</span>
+    </div>
+  </div>
+  <div class="salas-header">⚔ ESCOLHE A TUA SALA DE COMPETIÇÃO ⚔</div>
+  <div class="free-mode-bar" id="freeModeSalasBar">🎓 MODO GRATUITO — SEM RISCO FINANCEIRO</div>
+  <div class="salas-scroll" id="salasContainer"></div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-lbl">INÍCIO</div>
+    </div>
+    <div class="nav-item active" onclick="goTo('salas')">
+      <div class="nav-icon">⚔️</div>
+      <div class="nav-lbl">SALAS</div>
+    </div>
+    <div class="nav-item" onclick="goTo('market')">
+      <div class="nav-icon">📚</div>
+      <div class="nav-lbl">LIVROS</div>
+    </div>
+    <div class="nav-item" onclick="goTo('sobre')">
+      <div class="nav-icon">ℹ️</div>
+      <div class="nav-lbl">SOBRE</div>
+    </div>
+    <div class="nav-item" onclick="goTo('politica')">
+      <div class="nav-icon">⚖️</div>
+      <div class="nav-lbl">POLÍTICA</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     LOBBY
+═══════════════════════════════════════ -->
+<div class="state" id="state-lobby">
+  <div class="lobby-inner">
+    <div class="lobby-title">LOBBY</div>
+    <div class="lobby-sub" id="lobbyRoomName">SALA 100 Kz</div>
+    <div class="lobby-countdown" id="lobbyCountdown">7</div>
+    <div class="lobby-cd-lbl">SEGUNDOS PARA COMEÇAR</div>
+    <div class="lobby-players">
+      <div class="lobby-players-title">JOGADORES NA SALA</div>
+      <div class="lobby-list" id="lobbyList"></div>
+    </div>
+    <div class="lobby-room-badge">
+      <span>💰</span>
+      <span id="lobbyPrize">100 Kz</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     JOGO
+═══════════════════════════════════════ -->
+<div class="state" id="state-jogo">
+  <div class="jogo-header">
+    <div class="jogo-progress">
+      <div class="jogo-progress-fill" id="jogoProgressFill" style="width:20%"></div>
+    </div>
+    <div class="jogo-qnum" id="jogoQNum">1 / 5</div>
+    <div class="jogo-score-hdr" id="jogoScoreHdr">0 pts</div>
+  </div>
+  <div class="jogo-body">
+    <div class="jogo-timer-wrap">
+      <div class="jogo-timer-ring" id="timerRing">
+        <svg viewBox="0 0 80 80">
+          <circle class="bg" cx="40" cy="40" r="35"/>
+          <circle class="fg" id="timerCircle" cx="40" cy="40" r="35"/>
+        </svg>
+        <div class="jogo-timer-num" id="timerNum">12</div>
+      </div>
+    </div>
+    <div class="jogo-categoria" id="jogoCat">ANGOLA</div>
+    <div class="jogo-pergunta" id="jogoPergunta">Carregando pergunta...</div>
+    <div class="opcoes" id="opcoes"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     RESULTADO
+═══════════════════════════════════════ -->
+<div class="state" id="state-resultado">
+  <div class="resultado-inner">
+    <div class="resultado-emoji" id="resEmoji">🏆</div>
+    <div class="resultado-titulo" id="resTitulo">VITÓRIA!</div>
+    <div class="resultado-sub" id="resSub">Excelente desempenho!</div>
+    <div class="resultado-stats">
+      <div class="res-stat-row">
+        <span class="res-stat-lbl">RESPOSTAS CORRETAS</span>
+        <span class="res-stat-val" id="resCorretas">5/5</span>
+      </div>
+      <div class="res-stat-row">
+        <span class="res-stat-lbl">PONTUAÇÃO</span>
+        <span class="res-stat-val" id="resPontos">1500</span>
+      </div>
+      <div class="res-stat-row">
+        <span class="res-stat-lbl">POSIÇÃO FINAL</span>
+        <span class="res-stat-val" id="resPosicao">1º LUGAR</span>
+      </div>
+    </div>
+    <div class="resultado-prize" id="resPrizeBox">
+      <div class="resultado-prize-lbl">PRÉMIO GANHO</div>
+      <div class="resultado-prize-val" id="resPrize">0 Kz</div>
+    </div>
+    <div class="resultado-btns">
+      <button class="btn-primary" onclick="jogarNovamente()">JOGAR NOVAMENTE</button>
+      <button class="btn-secondary" onclick="goTo('home')">VOLTAR AO INÍCIO</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MARKETPLACE
+═══════════════════════════════════════ -->
+<div class="state" id="state-market">
+  <div class="app-header">
+    <div class="header-logo">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalance3">0 Kz</span>
+    </div>
+  </div>
+  <div class="ticker-wrap" style="border-bottom:none;border-top:1px solid rgba(212,175,55,0.1);">
+    <div class="ticker-inner">
+      <span class="ticker-item">📖 Marketplace ALUNA — Obras Selecionadas <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Qualidade Garantida <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📱 Entrega Digital Imediata <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📖 Marketplace ALUNA — Obras Selecionadas <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Qualidade Garantida <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📱 Entrega Digital Imediata <span class="ticker-sep">◆</span></span>
+    </div>
+  </div>
+  <div class="market-scroll">
+    <div class="market-banner">
+      <div class="market-banner-title">📚 LIVRARIA ALUNA</div>
+      <div class="market-banner-sub">Obras cuidadosamente selecionadas para o teu crescimento</div>
+    </div>
+    <div class="books-grid" id="booksGrid"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-lbl">INÍCIO</div>
+    </div>
+    <div class="nav-item" onclick="goTo('salas')">
+      <div class="nav-icon">⚔️</div>
+      <div class="nav-lbl">SALAS</div>
+    </div>
+    <div class="nav-item active" onclick="goTo('market')">
+      <div class="nav-icon">📚</div>
+      <div class="nav-lbl">LIVROS</div>
+    </div>
+    <div class="nav-item" onclick="goTo('sobre')">
+      <div class="nav-icon">ℹ️</div>
+      <div class="nav-lbl">SOBRE</div>
+    </div>
+    <div class="nav-item" onclick="goTo('politica')">
+      <div class="nav-icon">⚖️</div>
+      <div class="nav-lbl">POLÍTICA</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ADMIN
+═══════════════════════════════════════ -->
+<div class="state" id="state-admin">
+  <div class="admin-header-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+    <div>
+      <div class="admin-title">⚙ PAINEL ADMINISTRATIVO</div>
+      <div class="admin-sub">ACESSO RESTRITO — GOD MODE</div>
+    </div>
+    <button class="admin-logout-btn" onclick="adminLogout()">🔓 SAIR</button>
+  </div>
+  <!-- TABS -->
+  <div class="admin-tabs">
+    <div class="admin-tab active" onclick="switchAdminTab('dashboard')">📊 DASHBOARD</div>
+    <div class="admin-tab" onclick="switchAdminTab('users')">👤 UTILIZADORES</div>
+    <div class="admin-tab" onclick="switchAdminTab('questions')">🧠 PERGUNTAS</div>
+    <div class="admin-tab" onclick="switchAdminTab('gamecontrol')">🎮 JOGO</div>
+    <div class="admin-tab" onclick="switchAdminTab('marketplace')">📚 MARKETPLACE</div>
+    <div class="admin-tab" onclick="switchAdminTab('system')">⚙️ SISTEMA</div>
+  </div>
+  <div class="admin-scroll">
+
+    <!-- DASHBOARD -->
+    <div class="admin-tab-panel active" id="atab-dashboard">
+      <div class="admin-section">
+        <div class="admin-section-title">VISÃO GERAL DO SISTEMA</div>
+        <div class="admin-stat-grid">
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-jogos">0</div>
+            <div class="admin-stat-lbl">PARTIDAS TOTAIS</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-vit">0</div>
+            <div class="admin-stat-lbl">VITÓRIAS</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-ganhos">0 Kz</div>
+            <div class="admin-stat-lbl">Kz GANHOS</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-livros">0</div>
+            <div class="admin-stat-lbl">LIVROS CATÁLOGO</div>
+          </div>
+        </div>
+        <div class="admin-stat-grid">
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-salas">5</div>
+            <div class="admin-stat-lbl">SALAS ACTIVAS</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="adm-stat-perguntas">50</div>
+            <div class="admin-stat-lbl">BANCO DE PERGUNTAS</div>
+          </div>
+        </div>
+        <div class="admin-note">📍 Dados avançados de localização e rastreamento de utilizadores reais serão integrados na versão de produção.</div>
+      </div>
+      <div class="admin-section">
+        <button class="admin-btn" onclick="refreshDashboard()">↺ ACTUALIZAR DADOS</button>
+        <button class="admin-btn-red" onclick="goTo('home')">SAIR DO ADMIN</button>
+      </div>
+    </div>
+
+    <!-- UTILIZADORES -->
+    <div class="admin-tab-panel" id="atab-users">
+      <div class="admin-section">
+        <div class="admin-section-title">UTILIZADOR ACTUAL</div>
+        <div class="admin-user-row">
+          <div class="admin-user-id" id="adm-uid">—</div>
+          <div class="admin-user-bal" id="adm-ubal">0 Kz</div>
+        </div>
+        <div class="admin-section-title" style="margin-top:16px;">EDITAR SALDO</div>
+        <input class="admin-input" id="adminBalInput" placeholder="Novo saldo (ex: 5000)" type="number">
+        <button class="admin-btn" onclick="adminSetBalance()">DEFINIR SALDO</button>
+        <div class="admin-section-title" style="margin-top:16px;">AJUSTE RÁPIDO</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="admin-btn" onclick="adminAdjBalance(500)">+ 500 Kz</button>
+          <button class="admin-btn" onclick="adminAdjBalance(1000)">+ 1000 Kz</button>
+          <button class="admin-btn" onclick="adminAdjBalance(2000)">+ 2000 Kz</button>
+          <button class="admin-btn" style="background:var(--red);color:white;" onclick="adminAdjBalance(-500)">− 500 Kz</button>
+        </div>
+        <div class="admin-note">⚠️ Lista completa de utilizadores disponível na versão com backend real. Em modo demo, só o utilizador local está disponível.</div>
+      </div>
+    </div>
+
+    <!-- PERGUNTAS -->
+    <div class="admin-tab-panel" id="atab-questions">
+      <div class="admin-section">
+        <div class="admin-section-title">BANCO DE PERGUNTAS (<span id="adm-q-count">50</span>)</div>
+        <div id="adminQList" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">ADICIONAR PERGUNTA MANUALMENTE</div>
+        <select class="admin-input" id="adminQCat" style="appearance:auto;">
+          <option value="ANGOLA">ANGOLA</option>
+          <option value="MUNDO">MUNDO</option>
+          <option value="CIÊNCIA">CIÊNCIA</option>
+          <option value="HISTÓRIA">HISTÓRIA</option>
+        </select>
+        <input class="admin-input" id="adminQText" placeholder="Texto da pergunta...">
+        <input class="admin-input" id="adminQA" placeholder="Opção A (correcta)">
+        <input class="admin-input" id="adminQB" placeholder="Opção B">
+        <input class="admin-input" id="adminQC" placeholder="Opção C">
+        <input class="admin-input" id="adminQD" placeholder="Opção D">
+        <button class="admin-btn" onclick="adminAddQuestion()">ADICIONAR PERGUNTA</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-ai-box">
+          <div class="admin-ai-lbl">🤖 GERAÇÃO POR INTELIGÊNCIA ARTIFICIAL</div>
+          <textarea class="admin-textarea" id="adminAIPrompt" placeholder="Ex: Gera 3 perguntas sobre a história de Angola no século XX, nível médio..."></textarea>
+          <button class="admin-btn" onclick="adminGenerateAI()">GERAR VIA IA</button>
+        </div>
+        <div id="adminAIResult" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- CONTROLO DE JOGO -->
+    <div class="admin-tab-panel" id="atab-gamecontrol">
+      <div class="admin-section">
+        <div class="admin-section-title">TEMPORIZADORES</div>
+        <div class="admin-param-row">
+          <div>
+            <div class="admin-param-lbl">Tempo por Pergunta</div>
+            <div class="admin-param-sub">Segundos disponíveis para responder</div>
+          </div>
+          <input class="admin-param-input" id="paramTimer" value="12" type="number" min="5" max="60" onchange="applyGameParams()">
+        </div>
+        <div class="admin-param-row">
+          <div>
+            <div class="admin-param-lbl">Tempo de Lobby</div>
+            <div class="admin-param-sub">Segundos de espera antes do jogo</div>
+          </div>
+          <input class="admin-param-input" id="paramLobby" value="7" type="number" min="3" max="30" onchange="applyGameParams()">
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">VALORES DAS SALAS</div>
+        <div id="adminSalasList"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">PARÂMETROS DE PONTUAÇÃO</div>
+        <div class="admin-param-row">
+          <div>
+            <div class="admin-param-lbl">Pontos Base por Resposta</div>
+            <div class="admin-param-sub">Pontos independentes do tempo</div>
+          </div>
+          <input class="admin-param-input" id="paramBasePoints" value="100" type="number" min="10" max="500" onchange="applyGameParams()">
+        </div>
+        <div class="admin-param-row">
+          <div>
+            <div class="admin-param-lbl">Bónus por Segundo Restante</div>
+            <div class="admin-param-sub">Multiplicador de velocidade</div>
+          </div>
+          <input class="admin-param-input" id="paramTimeBonus" value="10" type="number" min="0" max="50" onchange="applyGameParams()">
+        </div>
+        <button class="admin-btn" onclick="applyGameParams();showToast('Parâmetros guardados')">GUARDAR PARÂMETROS</button>
+      </div>
+    </div>
+
+    <!-- MARKETPLACE ADMIN -->
+    <div class="admin-tab-panel" id="atab-marketplace">
+      <div class="admin-section">
+        <div class="admin-section-title">CATÁLOGO DE LIVROS</div>
+        <div class="admin-books-list" id="adminBooksList"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">ADICIONAR LIVRO</div>
+        <input class="admin-input" id="adminBookTitle" placeholder="Título do livro...">
+        <input class="admin-input" id="adminBookAuthor" placeholder="Autor...">
+        <input class="admin-input" id="adminBookPrice" placeholder="Preço (ex: 1500)" type="number">
+        <button class="admin-btn" onclick="addBook()">ADICIONAR LIVRO</button>
+      </div>
+    </div>
+
+    <!-- SISTEMA -->
+    <div class="admin-tab-panel" id="atab-system">
+      <div class="admin-section">
+        <div class="admin-section-title">TEMA DO SISTEMA</div>
+        <div class="admin-toggle-row">
+          <div>
+            <div class="admin-toggle-lbl">Modo Claro</div>
+            <div class="admin-toggle-sub">Altera o tema global da aplicação</div>
+          </div>
+          <div class="toggle" id="themeToggle" onclick="toggleTheme()"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">TICKER DE NOTÍCIAS</div>
+        <input class="admin-input" id="adminTickerInput" placeholder="Nova mensagem do ticker...">
+        <button class="admin-btn" onclick="addTickerMsg()">ADICIONAR MENSAGEM</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">MODO MANUTENÇÃO</div>
+        <div class="admin-toggle-row">
+          <div>
+            <div class="admin-toggle-lbl">Activar Manutenção</div>
+            <div class="admin-toggle-sub">Bloqueia o acesso de todos os utilizadores</div>
+          </div>
+          <div class="toggle" id="maintenanceToggle" onclick="toggleMaintenance()"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">AJUSTES DE INTERFACE</div>
+        <div class="admin-toggle-row">
+          <div>
+            <div class="admin-toggle-lbl">Modo Demo Activo</div>
+            <div class="admin-toggle-sub">Saldo virtual para novos utilizadores</div>
+          </div>
+          <div class="toggle on" id="demoToggle"></div>
+        </div>
+        <div class="admin-note">Funcionalidades de UI avançadas serão configuráveis na versão de produção.</div>
+      </div>
+      <div class="admin-section">
+        <button class="admin-btn-red" onclick="goTo('home')">SAIR DO ADMIN</button>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SOBRE NÓS
+═══════════════════════════════════════ -->
+<div class="state" id="state-sobre">
+  <div class="app-header">
+    <div class="header-logo" style="cursor:pointer;" onclick="goTo('home')">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalanceSobre">0 Kz</span>
+    </div>
+  </div>
+  <div class="sobre-scroll">
+    <div class="sobre-hero">
+      <div class="sobre-hero-title">SOBRE NÓS</div>
+      <div class="sobre-hero-sub">MANIFESTO INSTITUCIONAL — ALUNA V4</div>
+    </div>
+
+    <div class="sobre-section">
+      <div class="sobre-section-title">I. O Problema do Nosso Tempo</div>
+      <p class="sobre-text">Vivemos numa era de distração em massa. As redes sociais, concebidas originalmente como ferramentas de conexão humana, transformaram-se nos maiores consumidores de atenção da história da humanidade. Bilhões de horas são desperdiçadas diariamente em conteúdos efémeros, deixando para trás o que verdadeiramente importa: o conhecimento, o crescimento e a construção de um futuro sólido.</p>
+      <p class="sobre-text">O utilizador médio passa mais de quatro horas por dia em plataformas de entretenimento digital — tempo que poderia ser investido no desenvolvimento de competências, na leitura, no estudo ou na criação de valor para si e para a sociedade. Esta realidade não é acidental. É o resultado de algoritmos desenhados para maximizar o envolvimento emocional, explorando os nossos mecanismos neurológicos mais primitivos.</p>
+    </div>
+
+    <div class="sobre-section">
+      <div class="sobre-section-title">II. A Neurociência da Atenção</div>
+      <p class="sobre-text">A dopamina — neurotransmissor associado ao prazer e à motivação — é o principal alvo das redes sociais modernas. Cada notificação, cada "gosto", cada comentário desencadeia uma pequena descarga dopaminérgica que nos mantém presos num ciclo de recompensa variável. Este mecanismo, estudado exaustivamente pela psicologia comportamental, é o mesmo que alimenta os comportamentos aditivos.</p>
+      <p class="sobre-text">O resultado é uma atenção fragmentada, incapaz de sustentação prolongada, que compromete a capacidade de aprendizagem profunda, a memória de longo prazo e o pensamento crítico. Uma geração inteira cresce sem desenvolver as competências cognitivas necessárias para enfrentar os desafios complexos do século XXI.</p>
+      <div class="sobre-quote">
+        "A atenção é o recurso mais valioso do ser humano. Quem a controla, controla o seu destino. Quem a cede, perde a sua liberdade." — ALUNA, Manifesto Fundacional
+      </div>
+    </div>
+
+    <div class="sobre-section">
+      <div class="sobre-section-title">III. A Nossa Proposta</div>
+      <p class="sobre-text">A ALUNA nasceu da convicção de que é possível criar um ambiente digital que não apenas entretém, mas que transforma. Acreditamos que o entretenimento e a educação não são forças opostas — são aliadas poderosas quando combinadas com intenção e rigor.</p>
+      <p class="sobre-text">A nossa plataforma propõe uma experiência radicalmente diferente: cada minuto passado na ALUNA é um minuto investido. Através da competição baseada em conhecimento, o utilizador é incentivado a estudar, a pesquisar, a crescer. O prémio não é apenas financeiro — é a satisfação do domínio intelectual, a consciência do progresso, a disciplina forjada pelo desafio constante.</p>
+      <p class="sobre-text">Incorporamos elementos de psicologia positiva, teoria de jogos e pedagogia moderna para criar ciclos de recompensa que ampliam as capacidades humanas em vez de as explorar. Cada pergunta respondida correctamente é um neurónio fortalecido, uma conexão cognitiva consolidada.</p>
+    </div>
+
+    <div class="sobre-section">
+      <div class="sobre-section-title">IV. Filosofia e Valores</div>
+      <p class="sobre-text">A ALUNA é guiada por três princípios fundamentais: <strong style="color:var(--gold2)">Disciplina</strong>, <strong style="color:var(--gold2)">Conhecimento</strong> e <strong style="color:var(--gold2)">Excelência</strong>. Não acreditamos no sucesso fácil nem nos atalhos que comprometem a integridade. Acreditamos que a verdadeira riqueza reside na capacidade de pensar com clareza, de aprender continuamente e de agir com propósito.</p>
+      <p class="sobre-text">A nossa visão é uma Angola — e uma África — onde o capital humano é valorizado acima de qualquer outro recurso. Onde jovens e adultos entendem que o investimento mais rentável que podem fazer é no seu próprio desenvolvimento intelectual. Onde a cultura de aprendizagem é um motor de prosperidade colectiva.</p>
+      <div class="sobre-quote">
+        "Uma nação que lê, pensa e questiona é uma nação que não pode ser subjugada. O conhecimento é a única riqueza que ninguém pode confiscar."
+      </div>
+    </div>
+
+    <div class="sobre-section">
+      <div class="sobre-section-title">V. Valor Social e Missão</div>
+      <p class="sobre-text">Além da dimensão individual, a ALUNA tem uma missão social clara: contribuir para a criação de uma sociedade mais informada, mais crítica e mais capaz. Trabalhamos em estreita colaboração com educadores, psicólogos e especialistas em desenvolvimento humano para garantir que o nosso conteúdo seja rigoroso, actualizado e pedagogicamente relevante.</p>
+      <p class="sobre-text">A nossa plataforma está disponível para integração com instituições educativas, organismos governamentais e empresas que acreditem no potencial transformador da educação gamificada. Temos como ambição ser reconhecidos como um instrumento de política pública no domínio da literacia e do desenvolvimento de competências.</p>
+      <p class="sobre-text">O Marketplace ALUNA complementa esta missão ao disponibilizar obras cuidadosamente seleccionadas — livros que ampliam perspectivas, desenvolvem capacidades e inspiram acção. Cada obra é escolhida com o critério da excelência e do impacto real na vida do leitor.</p>
+    </div>
+
+    <div class="sobre-brand-box">
+      <div class="sobre-brand-name">GRUPO AGEA COMERCIAL</div>
+      <div class="sobre-brand-ceo">CEO &amp; FUNDADOR: ADELINO GRAÇA</div>
+      <div style="font-size:10px;color:var(--gold4);margin-top:8px;letter-spacing:1px;">ALUNA é uma marca do Grupo AGEA COMERCIAL</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item active" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     POLÍTICA DE UTILIZAÇÃO
+═══════════════════════════════════════ -->
+<div class="state" id="state-politica">
+  <div class="app-header">
+    <div class="header-logo" style="cursor:pointer;" onclick="goTo('home')">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalancePolitica">0 Kz</span>
+    </div>
+  </div>
+  <div class="politica-scroll">
+    <div class="politica-hero">
+      <div class="politica-hero-title">POLÍTICA DE UTILIZAÇÃO</div>
+      <div class="politica-hero-sub">TERMOS E CONDIÇÕES DA PLATAFORMA ALUNA</div>
+    </div>
+
+    <div class="politica-section">
+      <div class="politica-section-title">Regras por Faixa Etária</div>
+      <div class="politica-age-box">
+        <div class="politica-age-header">👦 MENORES DE 18 ANOS</div>
+        <div class="politica-age-body">
+          Utilizadores com menos de 18 anos têm acesso <strong style="color:var(--gold2)">exclusivamente ao Modo Gratuito</strong> da plataforma. Este modo utiliza saldo virtual sem qualquer transacção financeira real. O acesso ao Modo Competição — que envolve movimentos financeiros reais — está restrito a utilizadores maiores de idade, em conformidade com as disposições legais em vigor.
+        </div>
+      </div>
+      <div class="politica-age-box">
+        <div class="politica-age-header">🧑 MAIORES DE 18 ANOS</div>
+        <div class="politica-age-body">
+          Utilizadores maiores de 18 anos podem aceder ao <strong style="color:var(--gold2)">Modo Competição</strong>, que envolve entradas pagas e prémios em dinheiro real (Kwanza). O acesso implica a aceitação plena desta Política de Utilização e a responsabilidade pelos movimentos financeiros efectuados.
+        </div>
+      </div>
+    </div>
+
+    <div class="politica-section">
+      <div class="politica-section-title">Regras Gerais de Utilização</div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">✅</div>
+        <div class="politica-rule-text"><strong>Uso Responsável:</strong> A plataforma deve ser utilizada com responsabilidade e equilíbrio. Não deve ser a única actividade diária do utilizador nem interferir com as suas obrigações profissionais, escolares ou familiares.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">🚫</div>
+        <div class="politica-rule-text"><strong>Proibição de Fraude:</strong> É estritamente proibida qualquer tentativa de manipulação do sistema, uso de bots, scripts automáticos, múltiplas contas ou qualquer meio que confira vantagem injusta. A detecção destas práticas resultará no banimento permanente e eventual acção legal.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">🔒</div>
+        <div class="politica-rule-text"><strong>Integridade do Sistema:</strong> É proibido tentar aceder a áreas restritas da plataforma, reverter transacções de forma fraudulenta ou interferir com a experiência de outros utilizadores.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">⚖️</div>
+        <div class="politica-rule-text"><strong>Jogo Justo (Fair Play):</strong> Todos os utilizadores competem nas mesmas condições. A ALUNA garante a aleatoriedade das perguntas e a imparcialidade do sistema de classificação. Qualquer suspeita de favorecimento deve ser reportada à administração.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">🛡️</div>
+        <div class="politica-rule-text"><strong>Privacidade:</strong> Os dados dos utilizadores são tratados com confidencialidade e não são partilhados com terceiros sem consentimento. O ID de utilizador é gerado automaticamente e não contém informações pessoais identificáveis.</div>
+      </div>
+    </div>
+
+    <div class="politica-section">
+      <div class="politica-section-title">Pagamentos e Transacções</div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">💳</div>
+        <div class="politica-rule-text"><strong>Processamento Externo:</strong> Todos os depósitos e levantamentos são processados externamente via WhatsApp, com confirmação manual pela equipa ALUNA. A plataforma não armazena dados bancários nem de cartão de crédito.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">📋</div>
+        <div class="politica-rule-text"><strong>Responsabilidade do Utilizador:</strong> O utilizador é inteiramente responsável pela exactidão dos dados fornecidos nas transacções (número de conta, referência, valor). Erros de informação podem resultar em atrasos ou perdas que a ALUNA não pode reverter.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">⏱️</div>
+        <div class="politica-rule-text"><strong>Prazos de Processamento:</strong> Os depósitos são activados após confirmação de pagamento, normalmente em até 24 horas úteis. Os levantamentos são processados em até 48 horas úteis, sujeitos a verificação de identidade.</div>
+      </div>
+      <div class="politica-rule">
+        <div class="politica-rule-icon">⚠️</div>
+        <div class="politica-rule-text"><strong>Saldo Não Reembolsável Após Jogo:</strong> O saldo utilizado na entrada de uma sala é consumido no momento da entrada. Não há reembolso em caso de desistência ou problemas de conectividade do lado do utilizador.</div>
+      </div>
+    </div>
+
+    <div class="politica-section">
+      <div class="politica-section-title">Actualizações desta Política</div>
+      <div class="admin-note">Esta Política de Utilização pode ser actualizada pela administração da ALUNA (Grupo AGEA COMERCIAL) sem aviso prévio. A continuação da utilização da plataforma após alterações implica a aceitação das novas condições. Versão actual: 2025.1</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item active" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+//  SUPABASE — CONEXÃO
+// ═══════════════════════════════════════
+const SUPABASE_URL = 'https://enojfnwarrroaobxurrl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVub2pmbndhcnJyb2FvYnh1cnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjMxMjMsImV4cCI6MjA5MTEzOTEyM30.x0iTVooX8wdsAhwdcH6oHMnngIH49uHuEGNnPZbrHog';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════
+const APP = {
+  currentState: 'preloader',
+  userId: '',
+  balance: 0,
+  stats: { jogos:0, vitorias:0, ganhos:0 },
+  currentSala: null,
+  jogoState: {
+    perguntas: [],
+    qIndex: 0,
+    score: 0,
+    corretas: 0,
+    timer: null,
+    timerVal: 12,
+    blocked: false
+  },
+  admin: {
+    authenticated: false,
+    logoClicks: 0,
+    logoTimer: null
+  },
+  maintenance: false,
+  salas: [
+    { id:'s100',  nome:'SALA BRONZE',   preco:100,  premio:180,  icon:'🥉', desc:'Ideal para começar', locked:false },
+    { id:'s300',  nome:'SALA PRATA',    preco:300,  premio:540,  icon:'🥈', desc:'Competição moderada', locked:false },
+    { id:'s500',  nome:'SALA OURO',     preco:500,  premio:900,  icon:'🥇', desc:'Para os mais preparados', locked:false },
+    { id:'s1000', nome:'SALA DIAMANTE', preco:1000, premio:1800, icon:'💎', desc:'Nível avançado', locked:false },
+    { id:'s2000', nome:'SALA ÉLITE',    preco:2000, premio:3600, icon:'👑', desc:'Apenas para campeões', locked:false }
+  ],
+  books: [
+    { id:'b1', titulo:'A Arte de Vencer',        autor:'Hélder Santos',    preco:1200, cor:'#1a0a2e', cor2:'#6B21A8' },
+    { id:'bag1', titulo:'Domínio Mental',         autor:'Adelino Graça',    preco:1600, cor:'#0a0d1a', cor2:'#1B3A6B' },
+    { id:'b2', titulo:'Angola: Terra de Futuro', autor:'Nkosi Dlamini',    preco:900,  cor:'#0a1a0a', cor2:'#166534' },
+    { id:'b3', titulo:'Inteligência Emocional',  autor:'Maria do Céu',     preco:800,  cor:'#1a0a0a', cor2:'#991B1B' },
+    { id:'b4', titulo:'Finanças Pessoais',        autor:'Augusto Lopes',   preco:1500, cor:'#1a1200', cor2:'#92400E' },
+    { id:'bag2', titulo:'Estratégia e Poder',     autor:'Adelino Graça',    preco:1900, cor:'#0d0a0a', cor2:'#7C1D1D' },
+    { id:'b5', titulo:'Liderança Africana',      autor:'Chimamanda Osei',  preco:1100, cor:'#0a0a1a', cor2:'#1E3A5F' },
+    { id:'b6', titulo:'Empreendedorismo Digital', autor:'Paulo Ferreira',  preco:1800, cor:'#0d1a0d', cor2:'#065F46' }
+  ],
+  ticker: null,
+  processes: []
+};
+
+// ═══════════════════════════════════════
+//  NOMES ANGOLANOS (50 BOTS)
+// ═══════════════════════════════════════
+const NOMES_ANGOLANOS = [
+  'Kuanda Neto','Simão Kafuxi','Beatriz Muanda','Domingos Lueji',
+  'Esperança Ndongo','Feliciano Buta','Graça Kimbangu','Hilário Savimbi',
+  'Isabela Luena','Joaquim Mbundo','Kátia Zinga','Leonel Cahama',
+  'Marisa Nzinga','Narciso Waku','Olívia Dundo','Paulo Mayombe',
+  'Quitéria Longa','Roberto Cafunfo','Sandra Moxico','Tiago Cunene',
+  'Úrsula Cuvango','Valter Bie','Wanda Cuando','Xavier Namibe',
+  'Yolanda Kwanza','Zeca Malanje','Armindo Uige','Bela Zaire',
+  'Carlos Luanda','Dora Benguela','Elias Huila','Fátima Huambo',
+  'Gonçalo Soyo','Helena Ondjiva','Igor Lobito','Joana Cabinda',
+  'Kilamba Silva','Laura Dundo','Marco Sumbe','Nádia Caxito',
+  'Osvaldo Mbanza','Patrícia Cuito','Quirino Saurimo','Rosa Luena',
+  'Sérgio Menongue','Teresa Ndalatando','Ulisses Benguela','Vera Luanda',
+  'Wilson Malanje','Zulmira Uige'
+];
+
+// ═══════════════════════════════════════
+//  50 PERGUNTAS (40% Angola, 60% Mundo)
+// ═══════════════════════════════════════
+const PERGUNTAS_DB = [
+  // ANGOLA (20)
+  {cat:'ANGOLA', p:'Qual é a capital de Angola?', ops:['Luanda','Benguela','Huambo','Lubango'], r:0},
+  {cat:'ANGOLA', p:'Em que ano Angola se tornou independente?', ops:['1975','1974','1976','1980'], r:0},
+  {cat:'ANGOLA', p:'Qual é a moeda oficial de Angola?', ops:['Kwanza','Escudo','Real','Franco'], r:0},
+  {cat:'ANGOLA', p:'Qual é o rio mais longo de Angola?', ops:['Rio Kwanza','Rio Congo','Rio Zambeze','Rio Cunene'], r:0},
+  {cat:'ANGOLA', p:'Qual é a língua oficial de Angola?', ops:['Português','Kimbundu','Umbundu','Kikongo'], r:0},
+  {cat:'ANGOLA', p:'Qual é o maior porto de Angola?', ops:['Porto de Luanda','Porto do Lobito','Porto de Namibe','Porto de Cabinda'], r:0},
+  {cat:'ANGOLA', p:'Qual é o planalto mais famoso de Angola?', ops:['Planalto Central','Planalto Norte','Planalto Sul','Planalto Leste'], r:0},
+  {cat:'ANGOLA', p:'Quantas províncias tem Angola?', ops:['18','16','20','22'], r:0},
+  {cat:'ANGOLA', p:'Qual é o animal símbolo de Angola?', ops:['Palanca Negra','Elefante','Leão','Búfalo'], r:0},
+  {cat:'ANGOLA', p:'Qual era o nome colonial de Angola?', ops:['Angola Portuguesa','África Ocidental Portuguesa','Congo Português','Lusitânia Africana'], r:1},
+  {cat:'ANGOLA', p:'Quem foi o primeiro presidente de Angola?', ops:['Agostinho Neto','Jonas Savimbi','Holden Roberto','Eduardo dos Santos'], r:0},
+  {cat:'ANGOLA', p:'Em que oceano Angola tem costa?', ops:['Atlântico','Índico','Pacífico','Ártico'], r:0},
+  {cat:'ANGOLA', p:'Qual é a maior cidade de Angola?', ops:['Luanda','Huambo','Benguela','Lobito'], r:0},
+  {cat:'ANGOLA', p:'Qual é o principal produto de exportação de Angola?', ops:['Petróleo','Diamantes','Café','Milho'], r:0},
+  {cat:'ANGOLA', p:'Qual é a dança tradicional mais famosa de Angola?', ops:['Semba','Kizomba','Kuduro','Rebita'], r:0},
+  {cat:'ANGOLA', p:'O que significa "Angola" em língua local?', ops:['Terra de N\'gola','Terra do Sol','Rio Grande','Povo Livre'], r:0},
+  {cat:'ANGOLA', p:'Qual é a montanha mais alta de Angola?', ops:['Morro Moco','Serra da Chela','Serra de Taba','Monte Negro'], r:0},
+  {cat:'ANGOLA', p:'Qual partido governou Angola desde a independência?', ops:['MPLA','UNITA','FNLA','PRS'], r:0},
+  {cat:'ANGOLA', p:'Qual é a principal língua bantu de Angola?', ops:['Kimbundu','Suaíli','Zulu','Mandinga'], r:0},
+  {cat:'ANGOLA', p:'Em que continente está Angola?', ops:['África','América','Ásia','Europa'], r:0},
+  // MUNDO (30)
+  {cat:'MUNDO', p:'Qual é o maior oceano do mundo?', ops:['Pacífico','Atlântico','Índico','Ártico'], r:0},
+  {cat:'MUNDO', p:'Qual é a capital da França?', ops:['Paris','Lyon','Marselha','Nice'], r:0},
+  {cat:'MUNDO', p:'Qual é o país mais populoso do mundo?', ops:['Índia','China','EUA','Indonésia'], r:0},
+  {cat:'MUNDO', p:'Qual é o maior deserto do mundo?', ops:['Saara','Gobi','Atacama','Antártica'], r:3},
+  {cat:'MUNDO', p:'Quantos continentes tem o mundo?', ops:['7','5','6','8'], r:0},
+  {cat:'MUNDO', p:'Qual é o elemento químico mais abundante na Terra?', ops:['Oxigénio','Azoto','Carbono','Silício'], r:0},
+  {cat:'MUNDO', p:'Qual é o maior planeta do sistema solar?', ops:['Júpiter','Saturno','Neptuno','Urano'], r:0},
+  {cat:'MUNDO', p:'Qual é o rio mais longo do mundo?', ops:['Nilo','Amazonas','Yangtzé','Mississípi'], r:0},
+  {cat:'MUNDO', p:'Em que país se encontra a Torre Eiffel?', ops:['França','Itália','Bélgica','Suíça'], r:0},
+  {cat:'MUNDO', p:'Qual é a capital do Brasil?', ops:['Brasília','São Paulo','Rio de Janeiro','Salvador'], r:0},
+  {cat:'MUNDO', p:'Qual é o metal mais valioso do mundo?', ops:['Ouro','Prata','Platina','Ródio'], r:3},
+  {cat:'MUNDO', p:'Quem pintou a Mona Lisa?', ops:['Leonardo da Vinci','Michelangelo','Rafael','Botticelli'], r:0},
+  {cat:'MUNDO', p:'Qual é o país com maior área do mundo?', ops:['Rússia','Canadá','China','EUA'], r:0},
+  {cat:'MUNDO', p:'Em que ano começou a Segunda Guerra Mundial?', ops:['1939','1940','1941','1938'], r:0},
+  {cat:'MUNDO', p:'Qual é a moeda dos EUA?', ops:['Dólar','Euro','Libra','Iene'], r:0},
+  {cat:'MUNDO', p:'Qual é o animal mais rápido do mundo?', ops:['Guepardo','Falcão Peregrino','Gaivina','Leão'], r:1},
+  {cat:'MUNDO', p:'Quantos ossos tem o corpo humano adulto?', ops:['206','204','208','210'], r:0},
+  {cat:'MUNDO', p:'Qual é a capital da Alemanha?', ops:['Berlim','Munique','Hamburgo','Frankfurt'], r:0},
+  {cat:'MUNDO', p:'Quem foi o primeiro homem na Lua?', ops:['Neil Armstrong','Buzz Aldrin','Yuri Gagarin','Alan Shepard'], r:0},
+  {cat:'MUNDO', p:'Qual é o país com mais medalhas Olímpicas de sempre?', ops:['EUA','URSS/Rússia','China','Alemanha'], r:0},
+  {cat:'MUNDO', p:'Qual é a religião com mais praticantes no mundo?', ops:['Cristã','Islã','Hindu','Budista'], r:0},
+  {cat:'MUNDO', p:'Quantos países existem na União Europeia?', ops:['27','28','25','30'], r:0},
+  {cat:'MUNDO', p:'Qual é o símbolo químico do ouro?', ops:['Au','Or','Go','Ag'], r:0},
+  {cat:'MUNDO', p:'Qual é a capital da China?', ops:['Pequim','Xangai','Hong Kong','Cantão'], r:0},
+  {cat:'MUNDO', p:'Qual é o instrumento de corda mais tocado no mundo?', ops:['Guitarra','Violino','Piano','Baixo'], r:0},
+  {cat:'MUNDO', p:'Quem escreveu "Dom Quixote"?', ops:['Cervantes','Shakespeare','Dante','Camões'], r:0},
+  {cat:'MUNDO', p:'Qual é o idioma mais falado no mundo?', ops:['Inglês','Mandarim','Espanhol','Hindi'], r:1},
+  {cat:'MUNDO', p:'Qual é o país com maior número de ilhas?', ops:['Suécia','Filipinas','Indonésia','Noruega'], r:0},
+  {cat:'MUNDO', p:'Qual é a velocidade da luz (aprox.)?', ops:['300.000 km/s','150.000 km/s','450.000 km/s','200.000 km/s'], r:0},
+  {cat:'MUNDO', p:'Qual é o osso mais longo do corpo humano?', ops:['Fémur','Tíbia','Úmero','Rádio'], r:0}
+];
+
+// ═══════════════════════════════════════
+//  CANVAS FAGULHAS
+// ═══════════════════════════════════════
+(function initCanvas(){
+  const canvas = document.getElementById('sparkCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, sparks=[];
+  function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
+  for(let i=0;i<30;i++) sparks.push(mkSpark());
+  function mkSpark(){
+    return {
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-0.5)*0.5, vy:-Math.random()*0.8-0.2,
+      life:Math.random(), maxLife:1,
+      size:Math.random()*1.5+0.5,
+      alpha:Math.random()*0.4+0.1
+    };
+  }
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    sparks.forEach((s,i)=>{
+      s.x+=s.vx; s.y+=s.vy; s.life-=0.003;
+      if(s.life<=0) sparks[i]=mkSpark();
+      const a=s.life*s.alpha;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.size,0,Math.PI*2);
+      ctx.fillStyle=`rgba(212,175,55,${a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// ═══════════════════════════════════════
+//  PERSISTÊNCIA — SUPABASE
+// ═══════════════════════════════════════
+
+// Cache local para resiliência (fallback se Supabase falhar)
+function saveLocalCache(){
+  try {
+    localStorage.setItem('aluna_balance', APP.balance);
+    localStorage.setItem('aluna_stats', JSON.stringify(APP.stats));
+    localStorage.setItem('aluna_uid', APP.userId);
+  } catch(e){}
+}
+function loadLocalCache(){
+  try {
+    const bal = localStorage.getItem('aluna_balance');
+    if(bal !== null) APP.balance = parseInt(bal) || 0;
+    const st = localStorage.getItem('aluna_stats');
+    if(st) APP.stats = {...APP.stats, ...JSON.parse(st)};
+    const uid = localStorage.getItem('aluna_uid');
+    if(uid) APP.userId = uid;
+  } catch(e){}
+}
+
+async function saveData(){
+  // Gravar cache local imediatamente (instantâneo)
+  saveLocalCache();
+  // Gravar no Supabase (assíncrono)
+  try {
+    await db.from('players').upsert({
+      user_id: APP.userId,
+      balance: APP.balance,
+      jogos: APP.stats.jogos,
+      vitorias: APP.stats.vitorias,
+      ganhos: APP.stats.ganhos
+    }, { onConflict: 'user_id' });
+  } catch(e){ console.warn('Supabase saveData erro:', e); }
+}
+
+async function loadData(){
+  // 1. Carregar cache local (instantâneo)
+  loadLocalCache();
+  try {
+    // 2. Carregar dados do jogador do Supabase
+    if(APP.userId){
+      const { data: player } = await db
+        .from('players')
+        .select('*')
+        .eq('user_id', APP.userId)
+        .maybeSingle();
+      if(player){
+        APP.balance = player.balance ?? APP.balance;
+        APP.stats.jogos = player.jogos ?? APP.stats.jogos;
+        APP.stats.vitorias = player.vitorias ?? APP.stats.vitorias;
+        APP.stats.ganhos = player.ganhos ?? APP.stats.ganhos;
+      }
+    }
+    // 3. Carregar livros do Supabase
+    const { data: books } = await db.from('books').select('*');
+    if(books && books.length > 0){
+      APP.books = books.map(b=>({
+        id: b.id, titulo: b.titulo, autor: b.autor,
+        preco: b.preco, cor: b.cor, cor2: b.cor2
+      }));
+    }
+    // 4. Carregar estado das salas do Supabase
+    const { data: salasConf } = await db.from('salas_config').select('*');
+    if(salasConf && salasConf.length > 0){
+      salasConf.forEach(sc=>{
+        const sala = APP.salas.find(s=>s.id===sc.id);
+        if(sala) sala.locked = sc.locked;
+      });
+    }
+    // 5. Carregar parâmetros do jogo
+    const { data: gp } = await db
+      .from('app_config')
+      .select('*')
+      .eq('key', 'game_params')
+      .maybeSingle();
+    if(gp && gp.value){
+      APP.gameParams = { ...APP.gameParams, ...gp.value };
+    }
+  } catch(e){
+    console.warn('Supabase loadData erro (a usar cache local):', e);
+  }
+}
+
+function genUserId(){
+  const prefixes=['ANA','LUA','ZAI','MBU','KWA','UIG'];
+  const p=prefixes[Math.floor(Math.random()*prefixes.length)];
+  const n=Math.floor(1000+Math.random()*8999);
+  return `${p}-${n}`;
+}
+
+// ═══════════════════════════════════════
+//  MÁQUINA DE ESTADOS
+// ═══════════════════════════════════════
+function goTo(state){
+  killProcesses();
+  // Bloquear acesso ao admin sem autenticação Supabase
+  if(state === 'admin' && !APP.admin.authenticated){
+    openAdminModal();
+    return;
+  }
+  document.querySelectorAll('.state').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('state-'+state);
+  if(!el) return;
+  el.classList.add('active');
+  APP.currentState = state;
+  onEnter(state);
+}
+
+function onEnter(state){
+  switch(state){
+    case 'home': renderHome(); break;
+    case 'salas': renderSalas(); break;
+    case 'lobby': startLobby(); break;
+    case 'jogo': startJogo(); break;
+    case 'resultado': break;
+    case 'market': renderMarket(); break;
+    case 'admin': renderAdmin(); break;
+    case 'sobre': updateBalanceUI(); break;
+    case 'politica': updateBalanceUI(); break;
+  }
+}
+
+// ═══════════════════════════════════════
+//  KILL PROCESSES
+// ═══════════════════════════════════════
+function killProcesses(){
+  APP.processes.forEach(id=>{ clearInterval(id); clearTimeout(id); });
+  APP.processes = [];
+  if(APP.jogoState.timer){ clearInterval(APP.jogoState.timer); APP.jogoState.timer=null; }
+}
+
+function regProcess(id){ APP.processes.push(id); return id; }
+
+// ═══════════════════════════════════════
+//  RENDER HOME
+// ═══════════════════════════════════════
+function renderHome(){
+  updateBalanceUI();
+  document.getElementById('statJogos').textContent = APP.stats.jogos;
+  document.getElementById('statVit').textContent = APP.stats.vitorias;
+  document.getElementById('statGanhos').textContent = APP.stats.ganhos;
+  renderLeaderboard();
+}
+
+function updateBalanceUI(){
+  const fmt = APP.balance.toLocaleString('pt-AO') + ' Kz';
+  ['headerBalance','headerBalance2','headerBalance3','headerBalanceSobre','headerBalancePolitica'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=fmt;
+  });
+  const cb=document.getElementById('cardBalance');
+  if(cb) cb.innerHTML = APP.balance.toLocaleString('pt-AO') + '<span>Kz</span>';
+  const uid=document.getElementById('cardUserId');
+  if(uid) uid.textContent = APP.userId;
+}
+
+function animateBalance(amount){
+  const coin = document.createElement('div');
+  coin.className = 'coin-anim';
+  coin.textContent = (amount>0?'+':'')+amount.toLocaleString('pt-AO')+' Kz';
+  coin.style.cssText = `left:50%;top:40%;transform:translateX(-50%)`;
+  document.body.appendChild(coin);
+  regProcess(setTimeout(()=>{ if(coin.parentNode) coin.parentNode.removeChild(coin); }, 1600));
+}
+
+function renderLeaderboard(){
+  const lb = document.getElementById('leaderboard');
+  if(!lb) return;
+  const players = NOMES_ANGOLANOS.slice(0,8).map((n,i)=>({
+    nome:n, pts:Math.floor(5000-i*400+Math.random()*200)|0
+  }));
+  players.sort((a,b)=>b.pts-a.pts);
+  lb.innerHTML = players.map((p,i)=>{
+    const initials = p.nome.split(' ').map(x=>x[0]).join('').substring(0,2);
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    return `<div class="lb-item">
+      <div class="lb-rank ${rankClass}">${i+1}</div>
+      <div class="lb-avatar">${initials}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.nome}</div>
+        <div class="lb-pts">PONTUAÇÃO TOTAL</div>
+      </div>
+      <div class="lb-val">${p.pts.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  RENDER SALAS
+// ═══════════════════════════════════════
+function renderSalas(){
+  updateBalanceUI();
+  const c = document.getElementById('salasContainer');
+  if(!c) return;
+  c.innerHTML = APP.salas.map(sala=>{
+    const locked = sala.locked;
+    return `<div class="sala-card${locked?' locked':''}" onclick="enterSala('${sala.id}')">
+      <div class="sala-icon">${sala.icon}</div>
+      <div class="sala-info">
+        <div class="sala-name">${sala.nome}</div>
+        <div class="sala-desc">${sala.desc}</div>
+        <div class="sala-players">🟢 ${Math.floor(8+Math.random()*20)} jogadores online</div>
+      </div>
+      <div class="sala-prize">
+        <div class="sala-prize-val">${sala.preco.toLocaleString()}</div>
+        <div class="sala-prize-lbl">Kz ENTRADA</div>
+        <div class="sala-prize-lbl" style="color:var(--gold2);margin-top:4px;">+${sala.premio.toLocaleString()} Kz</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function enterSala(id){
+  const sala = APP.salas.find(s=>s.id===id);
+  if(!sala) return;
+  if(sala.locked){ showToast('Sala bloqueada pelo administrador','error'); return; }
+  if(APP.balance < sala.preco){ showToast('Saldo insuficiente para esta sala','error'); return; }
+  APP.currentSala = sala;
+  APP.balance -= sala.preco;
+  saveData();
+  goTo('lobby');
+}
+
+// ═══════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════
+function startLobby(){
+  const sala = APP.currentSala;
+  if(!sala) return;
+  document.getElementById('lobbyRoomName').textContent = sala.nome.toUpperCase();
+  document.getElementById('lobbyPrize').textContent = sala.premio.toLocaleString()+' Kz';
+  const list = document.getElementById('lobbyList');
+  list.innerHTML = '';
+  // Add player
+  addLobbyPlayer(APP.userId, 'TU');
+  let cd = 7;
+  const cdEl = document.getElementById('lobbyCountdown');
+  cdEl.textContent = cd;
+  // Bot interval
+  const botNames = [...NOMES_ANGOLANOS].sort(()=>Math.random()-0.5);
+  let botIdx = 0;
+  const botInterval = regProcess(setInterval(()=>{
+    if(botIdx < 5 && list.children.length < 6){
+      addLobbyPlayer(botNames[botIdx], 'BOT');
+      botIdx++;
+    }
+  }, 1200));
+  const cdInterval = regProcess(setInterval(()=>{
+    cd--;
+    cdEl.textContent = cd;
+    if(cd <= 3) cdEl.style.color='var(--red2)';
+    if(cd <= 0){
+      clearInterval(botInterval);
+      clearInterval(cdInterval);
+      APP.processes = APP.processes.filter(p=>p!==botInterval&&p!==cdInterval);
+      goTo('jogo');
+    }
+  }, 1000));
+}
+
+function addLobbyPlayer(nome, badge){
+  const list = document.getElementById('lobbyList');
+  if(!list) return;
+  const el = document.createElement('div');
+  el.className = 'lobby-player';
+  el.innerHTML = `<div class="lobby-player-dot"></div>
+    <div class="lobby-player-name">${nome}</div>
+    <div class="lobby-player-badge">${badge}</div>`;
+  list.appendChild(el);
+}
+
+// ═══════════════════════════════════════
+//  JOGO
+// ═══════════════════════════════════════
+function startJogo(){
+  const js = APP.jogoState;
+  // Escolher 5 perguntas aleatórias
+  const shuffled = [...PERGUNTAS_DB].sort(()=>Math.random()-0.5);
+  js.perguntas = shuffled.slice(0,5);
+  js.qIndex = 0;
+  js.score = 0;
+  js.corretas = 0;
+  js.blocked = false;
+  renderPergunta();
+}
+
+function renderPergunta(){
+  const js = APP.jogoState;
+  const q = js.perguntas[js.qIndex];
+  if(!q) { endJogo(); return; }
+  // Progresso
+  document.getElementById('jogoProgressFill').style.width = ((js.qIndex+1)/5*100)+'%';
+  document.getElementById('jogoQNum').textContent = (js.qIndex+1)+' / 5';
+  document.getElementById('jogoScoreHdr').textContent = js.score+' pts';
+  document.getElementById('jogoCat').textContent = q.cat;
+  document.getElementById('jogoPergunta').textContent = q.p;
+  const letras = ['A','B','C','D'];
+  document.getElementById('opcoes').innerHTML = q.ops.map((op,i)=>`
+    <div class="opcao" id="op${i}" onclick="responder(${i})">
+      <div class="opcao-letra">${letras[i]}</div>
+      <div class="opcao-texto">${op}</div>
+    </div>`).join('');
+  js.blocked = false;
+  startTimer();
+}
+
+function startTimer(){
+  const js = APP.jogoState;
+  const timerMax = (APP.gameParams && APP.gameParams.timerVal) || 12;
+  if(js.timer){ clearInterval(js.timer); }
+  js.timerVal = timerMax;
+  updateTimerUI(timerMax);
+  const ring = document.getElementById('timerRing');
+  ring.classList.remove('timer-alert','timer-danger');
+  js.timer = setInterval(()=>{
+    js.timerVal--;
+    updateTimerUI(js.timerVal);
+    const ring2 = document.getElementById('timerRing');
+    if(js.timerVal<=Math.floor(timerMax/2) && js.timerVal>Math.floor(timerMax/4)){ ring2.classList.add('timer-alert'); ring2.classList.remove('timer-danger'); }
+    if(js.timerVal<=Math.floor(timerMax/4)){ ring2.classList.add('timer-danger'); ring2.classList.remove('timer-alert'); }
+    if(js.timerVal<=0){
+      clearInterval(js.timer); js.timer=null;
+      timeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(val){
+  const circ = document.getElementById('timerCircle');
+  const num = document.getElementById('timerNum');
+  if(!circ||!num) return;
+  const total = 220;
+  const offset = total - (val/12)*total;
+  circ.style.strokeDashoffset = offset;
+  num.textContent = val;
+}
+
+function responder(idx){
+  const js = APP.jogoState;
+  if(js.blocked) return;
+  js.blocked = true;
+  if(js.timer){ clearInterval(js.timer); js.timer=null; }
+  const q = js.perguntas[js.qIndex];
+  const ops = document.querySelectorAll('.opcao');
+  ops.forEach(o=>o.classList.add('disabled'));
+  if(idx === q.r){
+    ops[idx].classList.add('correct');
+    js.corretas++;
+    const pts = 100 + js.timerVal*10;
+    js.score += pts;
+    document.getElementById('jogoScoreHdr').textContent = js.score+' pts';
+    showToast('Correto! +'+pts+' pontos','success');
+  } else {
+    ops[idx].classList.add('wrong');
+    ops[q.r].classList.add('correct');
+    showToast('Errado!','error');
+  }
+  const t = regProcess(setTimeout(()=>{
+    js.qIndex++;
+    if(js.qIndex >= 5){ endJogo(); }
+    else { renderPergunta(); }
+  }, 1400));
+}
+
+function timeOut(){
+  const js = APP.jogoState;
+  if(js.blocked) return;
+  js.blocked = true;
+  const q = js.perguntas[js.qIndex];
+  const ops = document.querySelectorAll('.opcao');
+  ops.forEach(o=>o.classList.add('disabled'));
+  ops[q.r].classList.add('correct');
+  showToast('Tempo esgotado!','error');
+  const t = regProcess(setTimeout(()=>{
+    js.qIndex++;
+    if(js.qIndex >= 5){ endJogo(); }
+    else { renderPergunta(); }
+  }, 1400));
+}
+
+function endJogo(){
+  const js = APP.jogoState;
+  const sala = APP.currentSala;
+  const total = js.corretas;
+  let prize = 0;
+  let won = false;
+  // Ganhar se 4 ou 5 corretas
+  if(total >= 4){
+    won = true;
+    prize = sala ? (total===5 ? sala.premio : Math.floor(sala.premio*0.6)) : 0;
+    APP.balance += prize;
+    APP.stats.vitorias++;
+    APP.stats.ganhos += prize;
+    animateBalance(prize);
+  }
+  APP.stats.jogos++;
+  saveData();
+  // Resultado
+  document.getElementById('resEmoji').textContent = won ? '🏆' : (total>=2 ? '😤' : '😔');
+  document.getElementById('resTitulo').textContent = won ? 'VITÓRIA!' : (total>=2 ? 'QUASE LÁ!' : 'DERROTA');
+  document.getElementById('resSub').textContent = won ? 'Excelente desempenho, campeão!' : (total>=2 ? 'Estiveste perto! Tenta de novo.' : 'Não desistas, pratica mais!');
+  document.getElementById('resCorretas').textContent = total+'/5';
+  document.getElementById('resPontos').textContent = js.score.toLocaleString();
+  // Simula posição
+  const pos = won ? (total===5?'1º LUGAR':'2º LUGAR') : Math.floor(3+Math.random()*5)+'º LUGAR';
+  document.getElementById('resPosicao').textContent = pos;
+  document.getElementById('resPrize').textContent = prize.toLocaleString()+' Kz';
+  if(!won) document.getElementById('resPrizeBox').style.opacity='0.4';
+  else document.getElementById('resPrizeBox').style.opacity='1';
+  updateBalanceUI();
+  goTo('resultado');
+}
+
+function jogarNovamente(){
+  if(APP.currentSala) enterSala(APP.currentSala.id);
+  else goTo('salas');
+}
+
+// ═══════════════════════════════════════
+//  MARKETPLACE
+// ═══════════════════════════════════════
+function renderMarket(){
+  updateBalanceUI();
+  const grid = document.getElementById('booksGrid');
+  if(!grid) return;
+  grid.innerHTML = APP.books.map(b=>{
+    const isAG = b.autor === 'Adelino Graça';
+    const coverSVG = buildBookCoverSVG(b);
+    return `<div class="book-card${isAG?' book-card-featured':''}" onclick="buyBook('${b.id}')">
+      <div class="book-cover-wrap">
+        ${coverSVG}
+        ${isAG ? '<div class="book-featured-badge">★ DESTAQUE</div>' : ''}
+      </div>
+      <div class="book-info">
+        <div class="book-title">${b.titulo}</div>
+        <div class="book-author">${b.autor}</div>
+        <div class="book-footer">
+          <div class="book-price">${b.preco.toLocaleString()} Kz</div>
+          <button class="book-btn" onclick="event.stopPropagation();buyBook('${b.id}')">ADQUIRIR</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildBookCoverSVG(b){
+  // Parse colors
+  const c1 = b.cor;
+  const c2 = b.cor2;
+  const id = b.id;
+  const titleWords = b.titulo.split(' ');
+  const line1 = titleWords.slice(0, Math.ceil(titleWords.length/2)).join(' ');
+  const line2 = titleWords.slice(Math.ceil(titleWords.length/2)).join(' ');
+  const initials = b.autor.split(' ').map(x=>x[0]).join('').substring(0,2);
+  const isAG = b.autor === 'Adelino Graça';
+  return `<svg viewBox="0 0 160 213" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:6px 8px 8px 6px;">
+    <defs>
+      <linearGradient id="bg_${id}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+      <linearGradient id="spine_${id}" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="rgba(0,0,0,0.5)"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+      </linearGradient>
+      <linearGradient id="shine_${id}" x1="0%" y1="0%" x2="30%" y2="100%">
+        <stop offset="0%" stop-color="rgba(255,255,255,0.07)"/>
+        <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+      </linearGradient>
+      <linearGradient id="gold_${id}" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#B8960C"/>
+        <stop offset="50%" stop-color="#F0D060"/>
+        <stop offset="100%" stop-color="#B8960C"/>
+      </linearGradient>
+      <filter id="blur_${id}"><feGaussianBlur stdDeviation="8"/></filter>
+    </defs>
+    <!-- Background -->
+    <rect width="160" height="213" fill="url(#bg_${id})" rx="2"/>
+    <!-- Glow orb -->
+    <circle cx="110" cy="60" r="60" fill="${c2}" opacity="0.25" filter="url(#blur_${id})"/>
+    <!-- Top gold line -->
+    <rect x="12" y="14" width="136" height="1.5" fill="url(#gold_${id})" rx="1"/>
+    <!-- Bottom gold line -->
+    <rect x="12" y="197" width="136" height="1.5" fill="url(#gold_${id})" rx="1"/>
+    <!-- Left spine shadow -->
+    <rect width="14" height="213" fill="url(#spine_${id})" rx="2"/>
+    <!-- Spine line -->
+    <rect x="14" y="0" width="1" height="213" fill="rgba(212,175,55,0.3)"/>
+    <!-- Decorative pattern lines -->
+    <rect x="20" y="20" width="120" height="0.5" fill="rgba(212,175,55,0.2)"/>
+    <rect x="20" y="193" width="120" height="0.5" fill="rgba(212,175,55,0.2)"/>
+    ${isAG ? `
+    <!-- Featured ornament top -->
+    <polygon points="80,28 84,36 93,36 86,41 89,50 80,44 71,50 74,41 67,36 76,36" fill="#D4AF37" opacity="0.9"/>
+    ` : `
+    <!-- Author initials circle -->
+    <circle cx="80" cy="38" r="14" fill="rgba(212,175,55,0.12)" stroke="rgba(212,175,55,0.35)" stroke-width="1"/>
+    <text x="80" y="43" font-family="Georgia,serif" font-size="11" font-weight="bold" fill="#D4AF37" text-anchor="middle">${initials}</text>
+    `}
+    <!-- Title line 1 -->
+    <text x="80" y="${isAG?72:78}" font-family="Georgia,serif" font-size="${line1.length>10?11:13}" font-weight="bold" fill="#FAFAFA" text-anchor="middle" dominant-baseline="middle">${line1.toUpperCase()}</text>
+    ${line2 ? `<text x="80" y="${isAG?89:95}" font-family="Georgia,serif" font-size="${line2.length>10?11:13}" font-weight="bold" fill="#FAFAFA" text-anchor="middle" dominant-baseline="middle">${line2.toUpperCase()}</text>` : ''}
+    <!-- Decorative middle rule -->
+    <rect x="40" y="${isAG?102:108}" width="80" height="1" fill="url(#gold_${id})" rx="1" opacity="0.7"/>
+    <!-- Abstract visual shape -->
+    <circle cx="80" cy="${isAG?145:148}" r="32" fill="rgba(255,255,255,0.04)" stroke="rgba(212,175,55,0.15)" stroke-width="1"/>
+    <circle cx="80" cy="${isAG?145:148}" r="20" fill="rgba(255,255,255,0.03)" stroke="rgba(212,175,55,0.2)" stroke-width="0.8"/>
+    <circle cx="80" cy="${isAG?145:148}" r="8" fill="rgba(212,175,55,0.15)" stroke="rgba(212,175,55,0.4)" stroke-width="1"/>
+    <!-- Author name -->
+    <text x="80" y="185" font-family="Georgia,serif" font-size="9" fill="rgba(240,208,96,0.8)" text-anchor="middle" letter-spacing="1">${b.autor.toUpperCase()}</text>
+    <!-- Shine overlay -->
+    <rect width="160" height="213" fill="url(#shine_${id})" rx="2"/>
+  </svg>`;
+}
+
+function buyBook(id){
+  const book = APP.books.find(b=>b.id===id);
+  if(!book) return;
+  const uid = APP.userId;
+  const msg = encodeURIComponent(`Olá, quero adquirir a obra "${book.titulo}" de ${book.autor}. Preço: ${book.preco} Kz. ID: ${uid}`);
+  window.open(`https://wa.me/244937876711?text=${msg}`, '_blank');
+}
+
+// ═══════════════════════════════════════
+//  ADMIN — GOD MODE
+// ═══════════════════════════════════════
+APP.adminTab = 'dashboard';
+APP.gameParams = { timerVal: 12, lobbyVal: 7, basePoints: 100, timeBonus: 10 };
+
+function switchAdminTab(tab){
+  APP.adminTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-panel').forEach(el=>el.classList.remove('active'));
+  const tabs = document.querySelectorAll('.admin-tab');
+  const panels = document.querySelectorAll('.admin-tab-panel');
+  const order = ['dashboard','users','questions','gamecontrol','marketplace','system'];
+  const idx = order.indexOf(tab);
+  if(tabs[idx]) tabs[idx].classList.add('active');
+  const panel = document.getElementById('atab-'+tab);
+  if(panel) panel.classList.add('active');
+}
+
+function renderAdmin(){
+  switchAdminTab(APP.adminTab);
+  refreshDashboard();
+  renderAdminSalas();
+  renderAdminBooks();
+  renderAdminQuestions();
+  const mt = document.getElementById('maintenanceToggle');
+  if(mt) mt.classList.toggle('on', APP.maintenance);
+  const tt = document.getElementById('themeToggle');
+  if(tt) tt.classList.toggle('on', document.body.classList.contains('theme-light'));
+  // Users tab
+  const uid = document.getElementById('adm-uid');
+  const ubal = document.getElementById('adm-ubal');
+  if(uid) uid.textContent = APP.userId;
+  if(ubal) ubal.textContent = APP.balance.toLocaleString('pt-AO') + ' Kz';
+}
+
+function refreshDashboard(){
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  set('adm-stat-jogos', APP.stats.jogos);
+  set('adm-stat-vit', APP.stats.vitorias);
+  set('adm-stat-ganhos', APP.stats.ganhos.toLocaleString('pt-AO') + ' Kz');
+  set('adm-stat-livros', APP.books.length);
+  const activeSalas = APP.salas.filter(s=>!s.locked).length;
+  set('adm-stat-salas', activeSalas + '/' + APP.salas.length);
+  set('adm-stat-perguntas', PERGUNTAS_DB.length);
+}
+
+function renderAdminSalas(){
+  const c = document.getElementById('adminSalasList');
+  if(!c) return;
+  c.innerHTML = APP.salas.map(s=>`
+    <div class="sala-lock-row">
+      <div>
+        <div class="sala-lock-name">${s.icon} ${s.nome}</div>
+        <div class="sala-lock-price">${s.preco.toLocaleString()} Kz entrada · ${s.premio.toLocaleString()} Kz prémio</div>
+      </div>
+      <div class="toggle ${s.locked?'':'on'}" onclick="toggleSala('${s.id}')"></div>
+    </div>`).join('');
+}
+
+function renderAdminBooks(){
+  const c = document.getElementById('adminBooksList');
+  if(!c) return;
+  c.innerHTML = APP.books.map(b=>`
+    <div class="admin-book-item">
+      <div class="admin-book-name">${b.titulo} <span style="font-size:9px;color:var(--gold4);">${b.autor}</span></div>
+      <div class="admin-book-price">${b.preco.toLocaleString()} Kz</div>
+      <div class="admin-book-del" onclick="removeBook('${b.id}')">×</div>
+    </div>`).join('');
+}
+
+function renderAdminQuestions(){
+  const c = document.getElementById('adminQList');
+  if(!c) return;
+  const cnt = document.getElementById('adm-q-count');
+  if(cnt) cnt.textContent = PERGUNTAS_DB.length;
+  c.innerHTML = PERGUNTAS_DB.slice(0,10).map((q,i)=>`
+    <div class="admin-q-item">
+      <div class="admin-q-cat">${q.cat} · #${i+1}</div>
+      <div class="admin-q-text">${q.p}</div>
+      <div class="admin-q-answers">${q.ops.map((op,j)=>`
+        <div class="admin-q-ans${j===q.r?' correct-ans':''}">${['A','B','C','D'][j]}. ${op}</div>`).join('')}
+      </div>
+    </div>`).join('') + `<div class="admin-note">A mostrar 10 de ${PERGUNTAS_DB.length} perguntas. Exportação completa disponível na versão de produção.</div>`;
+}
+
+function adminAddQuestion(){
+  const cat = document.getElementById('adminQCat').value;
+  const text = document.getElementById('adminQText').value.trim();
+  const a = document.getElementById('adminQA').value.trim();
+  const b = document.getElementById('adminQB').value.trim();
+  const qc = document.getElementById('adminQC').value.trim();
+  const d = document.getElementById('adminQD').value.trim();
+  if(!text||!a||!b||!qc||!d){ showToast('Preenche todos os campos','error'); return; }
+  PERGUNTAS_DB.push({ cat, p:text, ops:[a,b,qc,d], r:0 });
+  renderAdminQuestions();
+  document.getElementById('adminQText').value='';
+  document.getElementById('adminQA').value='';
+  document.getElementById('adminQB').value='';
+  document.getElementById('adminQC').value='';
+  document.getElementById('adminQD').value='';
+  showToast('Pergunta adicionada — banco: '+PERGUNTAS_DB.length);
+}
+
+function adminGenerateAI(){
+  const prompt = document.getElementById('adminAIPrompt').value.trim();
+  if(!prompt){ showToast('Introduz um prompt para a IA','error'); return; }
+  const result = document.getElementById('adminAIResult');
+  result.style.display = 'block';
+  result.innerHTML = '<div class="admin-note" style="color:var(--gold3);">🤖 Funcionalidade de geração por IA requer ligação ao backend. Em modo demo, as perguntas são adicionadas manualmente. Esta função estará activa na versão de produção com API key configurada.</div>';
+  showToast('IA: modo demo — use adição manual');
+}
+
+async function adminSetBalance(){
+  const val = parseInt(document.getElementById('adminBalInput').value);
+  if(isNaN(val)||val<0){ showToast('Valor inválido','error'); return; }
+  APP.balance = val;
+  await saveData();
+  updateBalanceUI();
+  const ubal = document.getElementById('adm-ubal');
+  if(ubal) ubal.textContent = APP.balance.toLocaleString('pt-AO') + ' Kz';
+  document.getElementById('adminBalInput').value = '';
+  showToast('Saldo definido: '+val.toLocaleString('pt-AO')+' Kz');
+}
+
+async function adminAdjBalance(amount){
+  APP.balance = Math.max(0, APP.balance + amount);
+  await saveData();
+  updateBalanceUI();
+  const ubal = document.getElementById('adm-ubal');
+  if(ubal) ubal.textContent = APP.balance.toLocaleString('pt-AO') + ' Kz';
+  showToast((amount>0?'+':'')+amount.toLocaleString('pt-AO')+' Kz — Novo saldo: '+APP.balance.toLocaleString('pt-AO')+' Kz');
+}
+
+async function applyGameParams(){
+  const t = parseInt(document.getElementById('paramTimer')?.value||12);
+  const l = parseInt(document.getElementById('paramLobby')?.value||7);
+  const bp = parseInt(document.getElementById('paramBasePoints')?.value||100);
+  const tb = parseInt(document.getElementById('paramTimeBonus')?.value||10);
+  APP.gameParams = { timerVal:t, lobbyVal:l, basePoints:bp, timeBonus:tb };
+  try {
+    await db.from('app_config').upsert({
+      key: 'game_params',
+      value: APP.gameParams
+    }, { onConflict: 'key' });
+  } catch(e){ console.warn('Erro ao guardar parâmetros:', e); }
+}
+
+async function toggleSala(id){
+  const s = APP.salas.find(x=>x.id===id);
+  if(!s) return;
+  s.locked = !s.locked;
+  renderAdminSalas();
+  try {
+    await db.from('salas_config').upsert({ id: s.id, locked: s.locked }, { onConflict: 'id' });
+  } catch(e){ console.warn('Erro ao guardar sala:', e); }
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('theme-light');
+  const tt = document.getElementById('themeToggle');
+  if(tt) tt.classList.toggle('on');
+  showToast('Tema alterado');
+}
+
+function toggleMaintenance(){
+  APP.maintenance = !APP.maintenance;
+  const mt = document.getElementById('maintenanceToggle');
+  if(mt) mt.classList.toggle('on', APP.maintenance);
+  const ov = document.getElementById('maintenanceOverlay');
+  if(ov) ov.classList.toggle('active', APP.maintenance);
+  showToast(APP.maintenance ? 'Modo manutenção ACTIVADO' : 'Modo manutenção DESACTIVADO');
+}
+
+function addTickerMsg(){
+  const inp = document.getElementById('adminTickerInput');
+  if(!inp || !inp.value.trim()) return;
+  const ti = document.getElementById('tickerInner');
+  if(ti){
+    const span = document.createElement('span');
+    span.className = 'ticker-item';
+    span.innerHTML = `📢 ${inp.value.trim()} <span class="ticker-sep">◆</span>`;
+    ti.appendChild(span.cloneNode(true));
+    ti.appendChild(span.cloneNode(true));
+  }
+  inp.value='';
+  showToast('Mensagem adicionada ao ticker');
+}
+
+async function addBook(){
+  const t = document.getElementById('adminBookTitle').value.trim();
+  const a = document.getElementById('adminBookAuthor').value.trim();
+  const p = parseInt(document.getElementById('adminBookPrice').value);
+  if(!t||!a||!p){ showToast('Preenche todos os campos','error'); return; }
+  const colors = [['#1a0a2e','#6B21A8'],['#0a1a0a','#166534'],['#1a1200','#92400E'],['#0a0a1a','#1E3A5F']];
+  const c = colors[Math.floor(Math.random()*colors.length)];
+  const newBook = { id:'b'+Date.now(), titulo:t, autor:a, preco:p, cor:c[0], cor2:c[1] };
+  APP.books.push(newBook);
+  renderAdminBooks();
+  document.getElementById('adminBookTitle').value='';
+  document.getElementById('adminBookAuthor').value='';
+  document.getElementById('adminBookPrice').value='';
+  try {
+    await db.from('books').insert(newBook);
+    showToast('Livro adicionado com sucesso');
+  } catch(e){
+    showToast('Erro ao guardar livro','error');
+  }
+}
+
+async function removeBook(id){
+  APP.books = APP.books.filter(b=>b.id!==id);
+  renderAdminBooks();
+  try {
+    await db.from('books').delete().eq('id', id);
+    showToast('Livro removido');
+  } catch(e){
+    showToast('Erro ao remover livro','error');
+  }
+}
+
+// ═══════════════════════════════════════
+//  ADMIN AUTH — SUPABASE AUTH
+// ═══════════════════════════════════════
+function openAdminModal(){
+  const modal = document.getElementById('adminModal');
+  modal.classList.add('active');
+  document.getElementById('adminEmailInput').value='';
+  document.getElementById('adminPwdInput').value='';
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginSpinner').classList.remove('show');
+  document.getElementById('loginBtn').disabled = false;
+  regProcess(setTimeout(()=>document.getElementById('adminEmailInput').focus(), 100));
+}
+
+function closeAdminModal(){
+  document.getElementById('adminModal').classList.remove('active');
+}
+
+async function adminLogin(){
+  const email = document.getElementById('adminEmailInput').value.trim();
+  const pwd = document.getElementById('adminPwdInput').value;
+  const errEl = document.getElementById('loginError');
+  const spinner = document.getElementById('loginSpinner');
+  const btn = document.getElementById('loginBtn');
+
+  errEl.classList.remove('show');
+
+  if(!email || !pwd){
+    errEl.textContent = 'Preenche o e-mail e a senha.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true;
+  spinner.classList.add('show');
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email: email,
+      password: pwd
+    });
+
+    if(error){
+      errEl.textContent = 'Credenciais inválidas. Verifica o e-mail e a senha.';
+      errEl.classList.add('show');
+      spinner.classList.remove('show');
+      btn.disabled = false;
+      return;
+    }
+
+    // Login com sucesso
+    APP.admin.authenticated = true;
+    APP.admin.user = data.user;
+    closeAdminModal();
+    showToast('Login de administrador com sucesso','success');
+    goTo('admin');
+  } catch(e){
+    errEl.textContent = 'Erro de conexão. Tenta novamente.';
+    errEl.classList.add('show');
+    console.error('Admin login erro:', e);
+  } finally {
+    spinner.classList.remove('show');
+    btn.disabled = false;
+  }
+}
+
+async function adminLogout(){
+  await db.auth.signOut();
+  APP.admin.authenticated = false;
+  APP.admin.user = null;
+  showToast('Sessão de administrador encerrada');
+  goTo('home');
+}
+
+// Verificar sessão existente ao iniciar
+async function checkAdminSession(){
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if(session && session.user){
+      APP.admin.authenticated = true;
+      APP.admin.user = session.user;
+    }
+  } catch(e){}
+}
+
+// Logo click handler (3 cliques) — agora com Supabase Auth
+function handleLogoClick(){
+  APP.admin.logoClicks++;
+  if(APP.admin.logoTimer) clearTimeout(APP.admin.logoTimer);
+  APP.admin.logoTimer = setTimeout(()=>{ APP.admin.logoClicks=0; }, 2000);
+  if(APP.admin.logoClicks >= 3){
+    APP.admin.logoClicks=0;
+    // Se já tem sessão activa, vai directo ao admin
+    if(APP.admin.authenticated){
+      goTo('admin');
+    } else {
+      openAdminModal();
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+//  FINANCEIRO
+// ═══════════════════════════════════════
+function handleDeposit(){
+  const uid = APP.userId;
+  const msg = encodeURIComponent(`RECARGA_ALUNA_${uid}`);
+  window.open(`https://wa.me/244937876711?text=${msg}`, '_blank');
+}
+
+function handleWithdraw(){
+  if(APP.balance <= 0){ showToast('Saldo insuficiente para levantamento','error'); return; }
+  const uid = APP.userId;
+  const msg = encodeURIComponent(`LEVANTAMENTO_ALUNA_${uid}_SALDO_${APP.balance}Kz`);
+  window.open(`https://wa.me/244937876711?text=${msg}`, '_blank');
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type?' '+type:'');
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════
+//  ENTER KEY ADMIN MODAL
+// ═══════════════════════════════════════
+document.getElementById('adminPwdInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') adminLogin();
+});
+document.getElementById('adminEmailInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('adminPwdInput').focus();
+});
+
+// ═══════════════════════════════════════
+//  LOGO CLICKS
+// ═══════════════════════════════════════
+document.getElementById('logoBtn').addEventListener('click', handleLogoClick);
+document.getElementById('logoBtn2').addEventListener('click', handleLogoClick);
+
+// ═══════════════════════════════════════
+//  FREE MODE + SECONDARY TOGGLE
+// ═══════════════════════════════════════
+APP.freeMode = false;
+APP.freeBalance = 2000;
+
+function enterCompetitionMode(){
+  APP.freeMode = false;
+  const bar = document.getElementById('freeModeSalasBar');
+  if(bar) bar.classList.remove('active');
+  goTo('salas');
+}
+
+function enterFreeMode(){
+  APP.freeMode = true;
+  APP.freeBalance = 2000;
+  const bar = document.getElementById('freeModeSalasBar');
+  if(bar) bar.classList.add('active');
+  showToast('Modo gratuito activado — 2.000 Kz virtuais','success');
+  goTo('salas');
+}
+
+function toggleSecondaryActions(){
+  const toggle = document.getElementById('secondaryToggle');
+  const grid = document.getElementById('secondaryGrid');
+  if(!toggle || !grid) return;
+  toggle.classList.toggle('open');
+  grid.classList.toggle('open');
+}
+
+// Override enterSala for free mode
+const _origEnterSala = enterSala;
+enterSala = function(id){
+  if(!APP.freeMode) return _origEnterSala(id);
+  const sala = APP.salas.find(s=>s.id===id);
+  if(!sala) return;
+  if(sala.locked){ showToast('Sala bloqueada pelo administrador','error'); return; }
+  if(APP.freeBalance < sala.preco){ showToast('Saldo virtual insuficiente','error'); return; }
+  APP.currentSala = sala;
+  APP.freeBalance -= sala.preco;
+  goTo('lobby');
+};
+
+// Override endJogo for free mode
+const _origEndJogo = endJogo;
+endJogo = function(){
+  if(!APP.freeMode) return _origEndJogo();
+  const js = APP.jogoState;
+  const sala = APP.currentSala;
+  const total = js.corretas;
+  let prize = 0;
+  let won = false;
+  if(total >= 4){
+    won = true;
+    prize = sala ? (total===5 ? sala.premio : Math.floor(sala.premio*0.6)) : 0;
+    APP.freeBalance += prize;
+  }
+  APP.stats.jogos++;
+  saveData();
+  document.getElementById('resEmoji').textContent = won ? '🏆' : (total>=2 ? '😤' : '😔');
+  document.getElementById('resTitulo').textContent = won ? 'VITÓRIA!' : (total>=2 ? 'QUASE LÁ!' : 'DERROTA');
+  document.getElementById('resSub').textContent = won
+    ? '🎓 Modo treino — sem transacção real'
+    : (total>=2 ? 'Estiveste perto! Tenta de novo.' : 'Não desistas, pratica mais!');
+  document.getElementById('resCorretas').textContent = total+'/5';
+  document.getElementById('resPontos').textContent = js.score.toLocaleString();
+  const pos = won ? (total===5?'1º LUGAR':'2º LUGAR') : Math.floor(3+Math.random()*5)+'º LUGAR';
+  document.getElementById('resPosicao').textContent = pos;
+  document.getElementById('resPrize').textContent = prize.toLocaleString()+' Kz (virtual)';
+  if(!won) document.getElementById('resPrizeBox').style.opacity='0.4';
+  else document.getElementById('resPrizeBox').style.opacity='1';
+  goTo('resultado');
+};
+
+// ═══════════════════════════════════════
+//  PRELOADER + INIT — SUPABASE
+//  O preloader mostra progresso real da conexão
+// ═══════════════════════════════════════
+(async function bootApp(){
+  const bar = document.getElementById('preloaderBar');
+  const msgEl = document.getElementById('preloaderMsg');
+
+  function setProgress(pct, msg){
+    bar.style.width = pct + '%';
+    if(msg) msgEl.textContent = msg;
+  }
+
+  try {
+    // ── FASE 1: userId ──
+    setProgress(10, 'A INICIALIZAR SISTEMA...');
+    const cachedUid = localStorage.getItem('aluna_uid');
+    if(cachedUid){
+      APP.userId = cachedUid;
+    } else {
+      APP.userId = genUserId();
+      localStorage.setItem('aluna_uid', APP.userId);
+    }
+
+    // ── FASE 2: Carregar dados do Supabase ──
+    setProgress(25, 'A CONECTAR AO SERVIDOR...');
+    await loadData();
+    setProgress(50, 'A CARREGAR PERGUNTAS...');
+
+    // ── FASE 3: Jogador novo? Criar registo ──
+    setProgress(65, 'A CONFIGURAR SALAS...');
+    try {
+      const { data: existing } = await db
+        .from('players')
+        .select('user_id')
+        .eq('user_id', APP.userId)
+        .maybeSingle();
+      if(!existing){
+        APP.balance = 2000;
+        await db.from('players').insert({
+          user_id: APP.userId,
+          balance: APP.balance,
+          jogos: 0, vitorias: 0, ganhos: 0
+        });
+      }
+    } catch(e){
+      const hadBalance = localStorage.getItem('aluna_balance') !== null;
+      if(!hadBalance) APP.balance = 2000;
+    }
+
+    // ── FASE 4: Sessão admin ──
+    setProgress(80, 'A VERIFICAR SALDO...');
+    await checkAdminSession();
+
+    // ── FASE 5: Concluir ──
+    saveLocalCache();
+    updateBalanceUI();
+    setProgress(100, 'PRONTO.');
+    await new Promise(r => setTimeout(r, 400));
+    goTo('home');
+
+  } catch(err){
+    console.error('Erro ao iniciar:', err);
+    // Fallback: avançar com cache local
+    loadLocalCache();
+    if(!APP.userId){ APP.userId = genUserId(); localStorage.setItem('aluna_uid', APP.userId); }
+    const hadBalance = localStorage.getItem('aluna_balance') !== null;
+    if(!hadBalance) APP.balance = 2000;
+    updateBalanceUI();
+    setProgress(100, 'PRONTO (MODO OFFLINE).');
+    await new Promise(r => setTimeout(r, 600));
+    goTo('home');
+  }
+})();
+</script>
+</body>
+</html>
