@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ALUNA V5 — Competição Educativa</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --noir: #050505;
+  --noir2: #0a0a0a;
+  --noir3: #111111;
+  --noir4: #1a1a1a;
+  --noir5: #222222;
+  --gold: #D4AF37;
+  --gold2: #F0D060;
+  --gold3: #B8960C;
+  --gold4: #8B6914;
+  --platinum: #E8E8E8;
+  --silver: #A8A8A8;
+  --red: #C0392B;
+  --red2: #E74C3C;
+  --green: #1A7A4A;
+  --green2: #27AE60;
+  --blue: #1A3A5C;
+  --white: #FAFAFA;
+  --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; height:100%; overflow:hidden; background:var(--noir); font-family:'Rajdhani', sans-serif; color:var(--white); }
+
+#sparkCanvas {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; z-index:0;
+}
+
+.state { display:none; position:fixed; inset:0; z-index:10; overflow-y:auto; overflow-x:hidden; }
+.state.active { display:flex; flex-direction:column; }
+
+/* PRELOADER */
+#state-preloader {
+  align-items:center; justify-content:center;
+  background:var(--noir); flex-direction:column; gap:32px;
+}
+.preloader-ring { width:120px; height:120px; position:relative; }
+.preloader-ring svg { width:100%; height:100%; animation:ringRotate 2s linear infinite; }
+@keyframes ringRotate { to { transform:rotate(360deg); } }
+.preloader-ring svg circle { fill:none; stroke:var(--gold); stroke-width:2; stroke-dasharray:300; stroke-dashoffset:80; stroke-linecap:round; }
+.preloader-logo-inner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Cinzel', serif; font-size:28px; font-weight:900; color:var(--gold); letter-spacing:4px; }
+.preloader-title { font-family:'Cinzel', serif; font-size:14px; font-weight:400; letter-spacing:8px; color:var(--silver); text-transform:uppercase; }
+.preloader-bar-wrap { width:200px; height:2px; background:var(--noir4); border-radius:1px; overflow:hidden; }
+.preloader-bar { height:100%; width:0; background:linear-gradient(90deg, var(--gold3), var(--gold2)); border-radius:1px; transition:width 0.05s linear; }
+.preloader-msg { font-size:11px; letter-spacing:3px; color:var(--gold4); text-transform:uppercase; animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* TICKER */
+.ticker-wrap { width:100%; overflow:hidden; background:var(--noir4); border-bottom:1px solid var(--gold4); padding:6px 0; flex-shrink:0; position:relative; z-index:20; }
+.ticker-inner { display:inline-flex; white-space:nowrap; animation:tickerAnim 30s linear infinite; }
+@keyframes tickerAnim { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ticker-item { font-size:11px; letter-spacing:2px; color:var(--gold); padding:0 32px; font-family:'Rajdhani', sans-serif; font-weight:500; }
+.ticker-sep { color:var(--gold4); }
+
+/* HEADER */
+.app-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:rgba(5,5,5,0.95); border-bottom:1px solid rgba(212,175,55,0.15); flex-shrink:0; position:relative; z-index:20; }
+.header-logo { font-family:'Cinzel', serif; font-size:20px; font-weight:900; color:var(--gold); letter-spacing:3px; cursor:pointer; user-select:none; position:relative; }
+.header-logo::after { content:'V5'; position:absolute; top:-6px; right:-22px; font-size:9px; color:var(--gold3); letter-spacing:1px; }
+.header-bal { display:flex; align-items:center; gap:8px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2); border-radius:20px; padding:6px 14px; }
+.header-bal-icon { font-size:12px; color:var(--gold); }
+.header-bal-val { font-size:14px; font-weight:700; color:var(--gold2); letter-spacing:1px; transition:var(--trans); }
+
+/* PLATINUM CARD */
+.platinum-card { margin:20px 16px; background:linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 40%, #1f1a0a 70%, #0a0a0a 100%); border-radius:16px; padding:24px; border:1px solid rgba(212,175,55,0.3); position:relative; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,175,55,0.1); flex-shrink:0; }
+.platinum-card::before { content:''; position:absolute; top:-40%; right:-20%; width:200px; height:200px; background:radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%); border-radius:50%; pointer-events:none; }
+.platinum-card::after { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(212,175,55,0.015) 2px, rgba(212,175,55,0.015) 4px); pointer-events:none; }
+.card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+.card-brand { font-family:'Cinzel', serif; font-size:11px; letter-spacing:4px; color:var(--gold3); }
+.card-type { font-size:10px; letter-spacing:3px; color:var(--silver); }
+.card-chip { width:36px; height:28px; border-radius:4px; background:linear-gradient(135deg, var(--gold3), var(--gold), var(--gold2)); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+.card-chip::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(0,0,0,0.3); }
+.card-chip::after { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(0,0,0,0.3); }
+.card-holo { width:32px; height:32px; border-radius:4px; background:linear-gradient(45deg, #ff006688,#0066ff88,#00ff6688,#ff006688); background-size:300% 300%; animation:holoShift 3s ease infinite; opacity:0.7; }
+@keyframes holoShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+.card-balance-label { font-size:10px; letter-spacing:3px; color:var(--silver); margin-bottom:4px; }
+.card-balance-val { font-family:'Cinzel', serif; font-size:28px; font-weight:700; color:var(--gold2); letter-spacing:2px; }
+.card-balance-val span { font-size:13px; color:var(--gold4); margin-left:4px; }
+.card-footer { display:flex; justify-content:space-between; align-items:flex-end; margin-top:16px; }
+.card-id { font-size:11px; letter-spacing:2px; color:var(--gold4); font-family:'Rajdhani',sans-serif; }
+.card-id-val { font-size:13px; letter-spacing:3px; color:var(--silver); margin-top:2px; }
+.card-actions { display:flex; gap:8px; }
+.card-btn { padding:6px 12px; border-radius:20px; font-size:10px; letter-spacing:2px; font-weight:600; cursor:pointer; border:none; transition:var(--trans); font-family:'Rajdhani',sans-serif; }
+.card-btn-dep { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); }
+.card-btn-dep:hover { transform:scale(1.05); }
+.card-btn-lev { background:transparent; color:var(--gold3); border:1px solid var(--gold4); }
+
+/* HOME */
+#state-home { background:var(--noir); }
+.home-scroll { flex:1; overflow-y:auto; padding-bottom:80px; }
+.section-title { font-family:'Cinzel', serif; font-size:11px; letter-spacing:4px; color:var(--gold4); text-transform:uppercase; padding:0 20px 12px; }
+.stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:0 16px 20px; }
+.stat-card { background:var(--noir3); border:1px solid rgba(212,175,55,0.1); border-radius:10px; padding:14px 10px; text-align:center; }
+.stat-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:var(--gold2); }
+.stat-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); margin-top:2px; }
+.quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 24px; }
+.qa-btn { background:var(--noir3); border:1px solid rgba(212,175,55,0.12); border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; cursor:pointer; transition:var(--trans); }
+.qa-btn:active { transform:scale(0.97); background:var(--noir4); }
+.qa-icon { font-size:22px; }
+.qa-label { font-size:12px; font-weight:600; letter-spacing:1px; color:var(--white); }
+.qa-sub { font-size:10px; color:var(--silver); }
+.leaderboard { padding:0 16px 24px; }
+.lb-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; background:var(--noir3); margin-bottom:8px; border:1px solid rgba(212,175,55,0.06); }
+.lb-rank { font-family:'Cinzel',serif; font-size:16px; font-weight:700; width:24px; text-align:center; }
+.lb-rank.gold { color:var(--gold); }
+.lb-rank.silver { color:var(--silver); }
+.lb-rank.bronze { color:#CD7F32; }
+.lb-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, var(--gold4), var(--gold3)); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--noir); flex-shrink:0; }
+.lb-info { flex:1; }
+.lb-name { font-size:13px; font-weight:600; }
+.lb-pts { font-size:10px; color:var(--gold4); letter-spacing:1px; }
+.lb-val { font-family:'Cinzel',serif; font-size:14px; color:var(--gold2); font-weight:700; }
+
+/* BOTTOM NAV */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; background:rgba(5,5,5,0.97); border-top:1px solid rgba(212,175,55,0.15); display:flex; align-items:center; justify-content:space-around; padding:8px 0 max(8px, env(safe-area-inset-bottom)); }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 12px; cursor:pointer; transition:var(--trans); border-radius:8px; min-width:56px; }
+.nav-item.active .nav-icon { color:var(--gold); }
+.nav-item.active .nav-lbl { color:var(--gold); }
+.nav-icon { font-size:20px; color:var(--silver); transition:var(--trans); }
+.nav-lbl { font-size:9px; letter-spacing:1px; color:var(--silver); transition:var(--trans); }
+.nav-item:active { transform:scale(0.92); }
+
+/* SALAS */
+#state-salas { background:var(--noir); }
+.salas-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.salas-header { text-align:center; padding:16px 20px 24px; font-family:'Cinzel',serif; font-size:11px; letter-spacing:4px; color:var(--gold4); }
+.sala-card { background:var(--noir3); border-radius:14px; border:1px solid rgba(212,175,55,0.12); padding:20px; margin-bottom:12px; cursor:pointer; transition:var(--trans); display:flex; align-items:center; gap:16px; position:relative; overflow:hidden; }
+.sala-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg, var(--gold3), var(--gold4)); border-radius:3px 0 0 3px; }
+.sala-card:active { transform:scale(0.98); }
+.sala-card.locked { opacity:0.5; cursor:not-allowed; }
+.sala-card.locked::after { content:'🔒'; position:absolute; top:12px; right:12px; font-size:14px; }
+.sala-icon { font-size:32px; }
+.sala-info { flex:1; }
+.sala-name { font-family:'Cinzel',serif; font-size:14px; font-weight:600; color:var(--white); margin-bottom:2px; }
+.sala-desc { font-size:11px; color:var(--silver); letter-spacing:1px; }
+.sala-players { font-size:10px; color:var(--gold4); margin-top:4px; }
+.sala-prize { text-align:right; }
+.sala-prize-val { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:var(--gold2); }
+.sala-prize-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); }
+
+/* LOBBY */
+#state-lobby { background:var(--noir); align-items:center; justify-content:center; flex-direction:column; }
+.lobby-inner { width:100%; max-width:360px; padding:20px; text-align:center; }
+.lobby-title { font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:var(--gold); letter-spacing:3px; margin-bottom:8px; }
+.lobby-sub { font-size:12px; letter-spacing:3px; color:var(--silver); margin-bottom:40px; }
+.lobby-countdown { font-family:'Cinzel',serif; font-size:80px; font-weight:900; color:var(--gold2); line-height:1; margin-bottom:8px; text-shadow:0 0 40px rgba(212,175,55,0.4); transition:color 0.3s; }
+.lobby-cd-lbl { font-size:10px; letter-spacing:4px; color:var(--silver); margin-bottom:32px; }
+.lobby-players { background:var(--noir3); border:1px solid rgba(212,175,55,0.1); border-radius:12px; padding:16px; margin-bottom:24px; }
+.lobby-players-title { font-size:10px; letter-spacing:3px; color:var(--gold4); margin-bottom:12px; }
+.lobby-list { display:flex; flex-direction:column; gap:6px; max-height:140px; overflow:hidden; }
+.lobby-player { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:6px; background:rgba(212,175,55,0.04); animation:playerIn 0.3s ease; }
+@keyframes playerIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+.lobby-player-dot { width:8px; height:8px; border-radius:50%; background:var(--green2); flex-shrink:0; animation:dotBlink 1.5s ease infinite; }
+@keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.lobby-player-name { font-size:12px; font-weight:600; flex:1; text-align:left; }
+.lobby-player-badge { font-size:9px; letter-spacing:1px; color:var(--gold4); background:rgba(212,175,55,0.08); padding:2px 6px; border-radius:10px; }
+.lobby-room-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2); border-radius:20px; padding:8px 20px; font-size:12px; letter-spacing:2px; color:var(--gold3); }
+
+/* JOGO */
+#state-jogo { background:var(--noir); flex-direction:column; }
+.jogo-header { padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(212,175,55,0.1); flex-shrink:0; }
+.jogo-progress { flex:1; height:3px; background:var(--noir4); border-radius:2px; overflow:hidden; }
+.jogo-progress-fill { height:100%; background:linear-gradient(90deg, var(--gold3), var(--gold2)); border-radius:2px; transition:width 0.5s ease; }
+.jogo-qnum { font-size:11px; letter-spacing:2px; color:var(--silver); white-space:nowrap; }
+.jogo-score-hdr { font-family:'Cinzel',serif; font-size:14px; color:var(--gold2); font-weight:700; white-space:nowrap; }
+.jogo-body { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; }
+.jogo-timer-wrap { display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.jogo-timer-ring { width:80px; height:80px; position:relative; flex-shrink:0; }
+.jogo-timer-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.jogo-timer-ring svg circle { fill:none; stroke-width:4; stroke-linecap:round; }
+.jogo-timer-ring svg .bg { stroke:var(--noir4); }
+.jogo-timer-ring svg .fg { stroke:var(--gold); stroke-dasharray:220; transition:stroke-dashoffset 0.9s linear, stroke 0.3s; }
+.jogo-timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:22px; font-weight:700; color:var(--gold); transition:color 0.3s; }
+.timer-alert .jogo-timer-num { color:#F39C12; }
+.timer-danger .jogo-timer-num { color:var(--red2); }
+.timer-danger .jogo-timer-ring svg .fg { stroke:var(--red2); }
+.timer-danger { animation:shake 0.3s ease infinite; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+.jogo-categoria { font-size:10px; letter-spacing:3px; color:var(--gold4); text-align:center; margin-bottom:16px; text-transform:uppercase; }
+.jogo-pergunta { font-family:'Cormorant Garamond', serif; font-size:20px; font-weight:400; line-height:1.5; text-align:center; color:var(--white); margin-bottom:28px; flex:1; }
+.opcoes { display:flex; flex-direction:column; gap:10px; }
+.opcao { background:var(--noir3); border:1px solid rgba(212,175,55,0.12); border-radius:12px; padding:16px 18px; cursor:pointer; transition:var(--trans); display:flex; align-items:center; gap:12px; user-select:none; }
+.opcao:active:not(.disabled) { transform:scale(0.98); }
+.opcao.disabled { pointer-events:none; }
+.opcao-letra { width:28px; height:28px; border-radius:50%; flex-shrink:0; background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.2); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--gold4); letter-spacing:0; transition:var(--trans); }
+.opcao-texto { font-size:14px; font-weight:500; line-height:1.3; transition:color 0.2s; }
+.opcao.correct { background:rgba(26,122,74,0.2); border-color:var(--green2); }
+.opcao.correct .opcao-letra { background:var(--green2); color:var(--white); border-color:var(--green2); }
+.opcao.wrong { background:rgba(192,57,43,0.2); border-color:var(--red2); }
+.opcao.wrong .opcao-letra { background:var(--red2); color:var(--white); border-color:var(--red2); }
+.opcao.selected { border-color:var(--gold); }
+.opcao.selected .opcao-letra { background:var(--gold); color:var(--noir); border-color:var(--gold); }
+
+/* RESULTADO */
+#state-resultado { background:var(--noir); align-items:center; justify-content:center; flex-direction:column; }
+.resultado-inner { width:100%; max-width:360px; padding:32px 20px; text-align:center; }
+.resultado-emoji { font-size:72px; margin-bottom:16px; animation:bounceIn 0.6s ease; }
+@keyframes bounceIn { 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+.resultado-titulo { font-family:'Cinzel',serif; font-size:28px; font-weight:900; color:var(--gold); letter-spacing:3px; margin-bottom:8px; }
+.resultado-sub { font-size:13px; color:var(--silver); margin-bottom:32px; letter-spacing:1px; }
+.resultado-stats { background:var(--noir3); border:1px solid rgba(212,175,55,0.12); border-radius:14px; padding:20px; margin-bottom:24px; }
+.res-stat-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+.res-stat-row + .res-stat-row { border-top:1px solid rgba(255,255,255,0.05); }
+.res-stat-lbl { font-size:11px; letter-spacing:2px; color:var(--silver); }
+.res-stat-val { font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:var(--gold2); }
+.resultado-prize { background:linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04)); border:1px solid rgba(212,175,55,0.25); border-radius:14px; padding:20px; margin-bottom:28px; }
+.resultado-prize-lbl { font-size:10px; letter-spacing:3px; color:var(--gold4); margin-bottom:6px; }
+.resultado-prize-val { font-family:'Cinzel',serif; font-size:36px; font-weight:900; color:var(--gold2); animation:countUp 0.8s ease; }
+@keyframes countUp { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+.resultado-btns { display:flex; flex-direction:column; gap:10px; }
+.btn-primary { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); border:none; border-radius:12px; padding:16px; font-size:13px; font-weight:700; letter-spacing:2px; cursor:pointer; transition:var(--trans); font-family:'Rajdhani',sans-serif; text-transform:uppercase; }
+.btn-primary:active { transform:scale(0.97); }
+.btn-secondary { background:transparent; color:var(--gold3); border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:14px; font-size:12px; font-weight:600; letter-spacing:2px; cursor:pointer; transition:var(--trans); font-family:'Rajdhani',sans-serif; text-transform:uppercase; }
+.btn-secondary:active { transform:scale(0.97); }
+
+/* MARKETPLACE */
+#state-market { background:var(--noir); }
+.market-scroll { flex:1; overflow-y:auto; padding:16px 16px 80px; }
+.market-banner { background:linear-gradient(135deg, #1a1200, #0d0d0d); border:1px solid rgba(212,175,55,0.2); border-radius:14px; padding:20px; margin-bottom:20px; text-align:center; }
+.market-banner-title { font-family:'Cinzel',serif; font-size:14px; letter-spacing:3px; color:var(--gold); margin-bottom:4px; }
+.market-banner-sub { font-size:11px; color:var(--silver); letter-spacing:1px; }
+.books-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.book-card { background:var(--noir3); border:1px solid rgba(212,175,55,0.1); border-radius:12px; overflow:hidden; cursor:pointer; transition:var(--trans); }
+.book-card:active { transform:scale(0.97); }
+.book-cover-wrap { position:relative; overflow:hidden; border-radius:6px 8px 8px 6px; box-shadow:4px 4px 12px rgba(0,0,0,0.6), -1px 0 4px rgba(0,0,0,0.4); }
+.book-card-featured { border-color:rgba(212,175,55,0.35) !important; box-shadow:0 0 16px rgba(212,175,55,0.15); }
+.book-featured-badge { position:absolute; top:8px; right:8px; background:linear-gradient(135deg,#B8960C,#F0D060); color:#050505; font-size:8px; font-weight:700; padding:3px 7px; border-radius:10px; letter-spacing:1px; }
+.book-info { padding:12px; }
+.book-title { font-size:12px; font-weight:600; margin-bottom:2px; line-height:1.3; }
+.book-author { font-size:10px; color:var(--silver); margin-bottom:8px; }
+.book-footer { display:flex; align-items:center; justify-content:space-between; }
+.book-price { font-family:'Cinzel',serif; font-size:13px; color:var(--gold2); font-weight:700; }
+.book-btn { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); border:none; border-radius:20px; padding:5px 10px; font-size:9px; font-weight:700; letter-spacing:1px; cursor:pointer; font-family:'Rajdhani',sans-serif; }
+
+/* ADMIN */
+#state-admin { background:var(--noir); }
+.admin-scroll { flex:1; overflow-y:auto; padding:0 16px 80px; }
+.admin-header-bar { background:rgba(212,175,55,0.05); border-bottom:1px solid rgba(212,175,55,0.2); padding:16px 20px; text-align:center; }
+.admin-title { font-family:'Cinzel',serif; font-size:14px; letter-spacing:4px; color:var(--gold); }
+.admin-sub { font-size:10px; letter-spacing:2px; color:var(--gold4); margin-top:2px; }
+.admin-section { margin-top:20px; }
+.admin-section-title { font-size:10px; letter-spacing:3px; color:var(--gold4); text-transform:uppercase; padding-bottom:10px; border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:12px; }
+.admin-toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--noir3); border-radius:10px; margin-bottom:8px; border:1px solid rgba(212,175,55,0.06); }
+.admin-toggle-lbl { font-size:13px; font-weight:500; }
+.admin-toggle-sub { font-size:10px; color:var(--silver); }
+.toggle { width:44px; height:24px; border-radius:12px; background:var(--noir4); position:relative; cursor:pointer; transition:background 0.3s; border:1px solid rgba(255,255,255,0.1); flex-shrink:0; }
+.toggle.on { background:var(--gold3); }
+.toggle::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--white); transition:transform 0.3s; }
+.toggle.on::after { transform:translateX(20px); }
+.admin-input { width:100%; background:var(--noir3); border:1px solid rgba(212,175,55,0.15); border-radius:10px; padding:12px 14px; color:var(--white); font-size:13px; font-family:'Rajdhani',sans-serif; outline:none; margin-bottom:8px; }
+.admin-input:focus { border-color:var(--gold3); }
+.admin-btn { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); border:none; border-radius:10px; padding:12px 20px; font-size:12px; font-weight:700; letter-spacing:2px; cursor:pointer; font-family:'Rajdhani',sans-serif; width:100%; margin-bottom:8px; }
+.admin-books-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.admin-book-item { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--noir3); border-radius:8px; border:1px solid rgba(212,175,55,0.06); }
+.admin-book-name { flex:1; font-size:12px; }
+.admin-book-price { font-size:11px; color:var(--gold3); }
+.admin-book-del { width:24px; height:24px; border-radius:50%; background:rgba(192,57,43,0.2); border:1px solid var(--red); color:var(--red2); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.sala-lock-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--noir3); border-radius:8px; margin-bottom:6px; border:1px solid rgba(212,175,55,0.06); }
+.sala-lock-name { font-size:13px; font-weight:600; }
+.sala-lock-price { font-size:11px; color:var(--gold4); }
+.maintenance-overlay { position:fixed; inset:0; z-index:999; background:rgba(5,5,5,0.97); display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+.maintenance-overlay.active { display:flex; }
+.maintenance-title { font-family:'Cinzel',serif; font-size:24px; letter-spacing:4px; color:var(--gold); text-align:center; }
+.maintenance-sub { font-size:12px; letter-spacing:2px; color:var(--silver); }
+.admin-btn-red { background:linear-gradient(135deg, #8B0000, var(--red)); color:var(--white); border:none; border-radius:10px; padding:12px 20px; font-size:12px; font-weight:700; letter-spacing:2px; cursor:pointer; font-family:'Rajdhani',sans-serif; width:100%; margin-bottom:8px; }
+.admin-tabs { display:flex; overflow-x:auto; gap:0; border-bottom:1px solid rgba(212,175,55,0.15); flex-shrink:0; }
+.admin-tab { padding:12px 14px; font-size:10px; letter-spacing:1px; color:var(--silver); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:var(--trans); }
+.admin-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.admin-tab-panel { display:none; }
+.admin-tab-panel.active { display:block; }
+.admin-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.admin-stat-card { background:var(--noir3); border:1px solid rgba(212,175,55,0.08); border-radius:10px; padding:14px; text-align:center; }
+.admin-stat-val { font-family:'Cinzel',serif; font-size:18px; color:var(--gold2); font-weight:700; }
+.admin-stat-lbl { font-size:9px; letter-spacing:2px; color:var(--silver); margin-top:4px; }
+.admin-note { font-size:10px; color:var(--gold4); letter-spacing:1px; background:rgba(212,175,55,0.04); padding:10px 12px; border-radius:8px; margin-top:8px; border:1px solid rgba(212,175,55,0.08); }
+.admin-q-item { background:var(--noir3); border:1px solid rgba(212,175,55,0.06); border-radius:8px; padding:12px; margin-bottom:8px; }
+.admin-q-cat { font-size:9px; letter-spacing:2px; color:var(--gold4); margin-bottom:4px; }
+.admin-q-text { font-size:12px; font-weight:500; margin-bottom:8px; }
+.admin-q-answers { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.admin-q-ans { font-size:10px; color:var(--silver); padding:4px 6px; border-radius:4px; background:var(--noir4); }
+.admin-q-ans.correct-ans { background:rgba(26,122,74,0.2); color:var(--green2); }
+.admin-param-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--noir3); border-radius:10px; margin-bottom:8px; border:1px solid rgba(212,175,55,0.06); }
+.admin-param-lbl { font-size:12px; font-weight:500; }
+.admin-param-sub { font-size:9px; color:var(--silver); }
+.admin-param-input { width:60px; background:var(--noir4); border:1px solid rgba(212,175,55,0.2); border-radius:6px; padding:6px 8px; color:var(--gold2); font-size:14px; text-align:center; font-family:'Cinzel',serif; outline:none; }
+.admin-ai-box { background:var(--noir3); border:1px solid rgba(212,175,55,0.1); border-radius:10px; padding:16px; margin-bottom:12px; }
+.admin-ai-lbl { font-size:10px; letter-spacing:2px; color:var(--gold3); margin-bottom:10px; }
+.admin-textarea { width:100%; background:var(--noir4); border:1px solid rgba(212,175,55,0.15); border-radius:8px; padding:12px; color:var(--white); font-size:12px; font-family:'Rajdhani',sans-serif; min-height:80px; outline:none; resize:vertical; margin-bottom:8px; }
+.admin-user-row { display:flex; align-items:center; justify-content:space-between; background:var(--noir3); padding:14px; border-radius:10px; border:1px solid rgba(212,175,55,0.08); }
+.admin-user-id { font-size:14px; font-weight:600; letter-spacing:2px; }
+.admin-user-bal { font-family:'Cinzel',serif; font-size:16px; color:var(--gold2); font-weight:700; }
+/* Tx log */
+.admin-tx-log { max-height:300px; overflow-y:auto; }
+.admin-tx-item { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--noir3); border-radius:6px; margin-bottom:4px; font-size:11px; border:1px solid rgba(212,175,55,0.04); }
+.admin-tx-amount { font-family:'Cinzel',serif; font-weight:700; }
+.admin-tx-amount.credit { color:var(--green2); }
+.admin-tx-amount.debit { color:var(--red2); }
+.admin-tx-desc { color:var(--silver); flex:1; margin:0 8px; }
+.admin-tx-time { color:var(--gold4); font-size:9px; }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:var(--noir3); border:1px solid rgba(212,175,55,0.2); border-radius:16px; padding:28px 24px; width:100%; max-width:320px; text-align:center; }
+.modal-title { font-family:'Cinzel',serif; font-size:16px; letter-spacing:3px; color:var(--gold); margin-bottom:8px; }
+.modal-sub { font-size:11px; color:var(--silver); margin-bottom:20px; }
+.modal-input { width:100%; background:var(--noir4); border:1px solid rgba(212,175,55,0.2); border-radius:10px; padding:14px; color:var(--white); font-size:16px; text-align:center; letter-spacing:4px; outline:none; font-family:'Cinzel',serif; margin-bottom:16px; }
+.modal-input:focus { border-color:var(--gold3); }
+.modal-btns { display:flex; gap:10px; }
+.modal-btns button { flex:1; padding:12px; border-radius:10px; cursor:pointer; font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; border:none; }
+.modal-confirm { background:linear-gradient(135deg, var(--gold3), var(--gold)); color:var(--noir); }
+.modal-cancel { background:var(--noir4); color:var(--silver); border:1px solid rgba(255,255,255,0.1) !important; }
+
+/* TOAST */
+.toast { position:fixed; top:20px; left:50%; transform:translateX(-50%) translateY(-80px); z-index:9999; background:var(--noir3); border:1px solid rgba(212,175,55,0.3); border-radius:20px; padding:10px 20px; font-size:12px; letter-spacing:1px; color:var(--gold2); white-space:nowrap; transition:transform 0.4s cubic-bezier(0.4,0,0.2,1); box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.success { border-color:var(--green2); color:var(--green2); }
+.toast.error { border-color:var(--red2); color:var(--red2); }
+
+/* COIN ANIMATION */
+.coin-anim { position:fixed; pointer-events:none; z-index:8000; font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:var(--gold2); text-shadow:0 0 10px var(--gold); animation:coinFloat 1.5s ease forwards; }
+@keyframes coinFloat { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(0.5)} }
+
+.global-footer { position:fixed; bottom:0; left:0; right:0; text-align:center; padding:3px 0 4px; pointer-events:none; z-index:200; font-size:8px; letter-spacing:2px; color:rgba(212,175,55,0.45); background:rgba(5,5,5,0.7); font-family:'Rajdhani',sans-serif; text-transform:uppercase; }
+
+/* HERO BUTTONS */
+.hero-actions { padding:16px 16px 8px; display:flex; flex-direction:column; gap:12px; }
+.hero-btn { width:100%; border:none; border-radius:14px; padding:22px 20px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:var(--trans); position:relative; overflow:hidden; }
+.hero-btn:active { transform:scale(0.97); }
+.hero-btn-compete { background:linear-gradient(135deg, var(--gold3), var(--gold), var(--gold2)); box-shadow:0 4px 24px rgba(212,175,55,0.35); }
+.hero-btn-free { background:linear-gradient(135deg, #1A3A5C, #234E78, #2D6494); border:1px solid rgba(212,175,55,0.25); box-shadow:0 4px 20px rgba(26,58,92,0.4); }
+.hero-btn-icon { font-size:28px; flex-shrink:0; }
+.hero-btn-text { text-align:left; }
+.hero-btn-title { font-family:'Cinzel',serif; font-size:15px; font-weight:700; letter-spacing:2px; line-height:1.2; }
+.hero-btn-compete .hero-btn-title { color:var(--noir); }
+.hero-btn-free .hero-btn-title { color:var(--gold2); }
+.hero-btn-sub { font-size:10px; letter-spacing:1px; margin-top:2px; }
+.hero-btn-compete .hero-btn-sub { color:rgba(5,5,5,0.7); }
+.hero-btn-free .hero-btn-sub { color:rgba(255,255,255,0.6); }
+.hero-btn-badge { position:absolute; top:8px; right:12px; font-size:8px; letter-spacing:2px; font-weight:700; padding:3px 8px; border-radius:10px; }
+.hero-btn-compete .hero-btn-badge { background:rgba(5,5,5,0.15); color:var(--noir); }
+.hero-btn-free .hero-btn-badge { background:rgba(212,175,55,0.15); color:var(--gold); }
+.free-mode-bar { display:none; align-items:center; justify-content:center; gap:8px; padding:6px 0; background:rgba(26,58,92,0.3); border-bottom:1px solid rgba(45,100,148,0.4); font-size:10px; letter-spacing:2px; color:#5BA3E0; flex-shrink:0; }
+.free-mode-bar.active { display:flex; }
+.secondary-section { padding:0 16px 20px; }
+.secondary-toggle { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; cursor:pointer; border-radius:10px; background:var(--noir3); border:1px solid rgba(212,175,55,0.06); margin-bottom:10px; transition:var(--trans); }
+.secondary-toggle:active { transform:scale(0.97); }
+.secondary-toggle-lbl { font-size:11px; letter-spacing:2px; color:var(--silver); }
+.secondary-toggle-arrow { font-size:10px; color:var(--gold4); transition:transform 0.3s; }
+.secondary-toggle.open .secondary-toggle-arrow { transform:rotate(180deg); }
+.secondary-grid { display:none; grid-template-columns:1fr 1fr; gap:10px; }
+.secondary-grid.open { display:grid; }
+.secondary-grid .qa-btn { opacity:0.7; border-color:rgba(212,175,55,0.06); }
+.secondary-grid .qa-icon { font-size:18px; }
+.secondary-grid .qa-label { font-size:11px; }
+.login-field { margin-bottom:12px; }
+.login-field label { display:block; font-size:10px; letter-spacing:2px; color:var(--gold4); margin-bottom:6px; text-transform:uppercase; }
+.login-field .modal-input { width:100%; }
+.login-error { color:var(--red2); font-size:11px; letter-spacing:1px; margin-bottom:10px; display:none; text-align:center; }
+.login-error.show { display:block; }
+.login-spinner { display:none; text-align:center; padding:12px; font-size:11px; letter-spacing:2px; color:var(--gold3); }
+.login-spinner.show { display:block; }
+.admin-logout-btn { padding:8px 16px; border-radius:20px; font-size:10px; letter-spacing:2px; font-weight:600; cursor:pointer; background:transparent; color:var(--red2); border:1px solid rgba(231,76,60,0.3); font-family:'Rajdhani',sans-serif; transition:var(--trans); }
+
+/* SOBRE NÓS */
+#state-sobre { background:var(--noir); }
+.sobre-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.sobre-hero { text-align:center; padding:24px 0 20px; border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:24px; }
+.sobre-hero-title { font-family:'Cinzel',serif; font-size:20px; font-weight:700; color:var(--gold); letter-spacing:4px; margin-bottom:8px; }
+.sobre-hero-sub { font-size:11px; letter-spacing:3px; color:var(--gold4); }
+.sobre-section { margin-bottom:28px; }
+.sobre-section-title { font-family:'Cinzel',serif; font-size:12px; letter-spacing:3px; color:var(--gold3); text-transform:uppercase; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid rgba(212,175,55,0.12); }
+.sobre-text { font-family:'Cormorant Garamond',serif; font-size:15px; line-height:1.75; color:rgba(250,250,250,0.85); font-weight:400; }
+.sobre-text + .sobre-text { margin-top:12px; }
+.sobre-quote { border-left:2px solid var(--gold3); padding:12px 16px; margin:16px 0; background:rgba(212,175,55,0.04); font-family:'Cormorant Garamond',serif; font-size:14px; font-style:italic; color:var(--gold2); line-height:1.6; border-radius:0 8px 8px 0; }
+.sobre-brand-box { background:linear-gradient(135deg, rgba(212,175,55,0.06), rgba(212,175,55,0.02)); border:1px solid rgba(212,175,55,0.2); border-radius:12px; padding:20px; text-align:center; margin-top:24px; }
+.sobre-brand-name { font-family:'Cinzel',serif; font-size:14px; letter-spacing:3px; color:var(--gold); margin-bottom:6px; }
+.sobre-brand-ceo { font-size:11px; letter-spacing:2px; color:var(--silver); }
+
+/* POLÍTICA */
+#state-politica { background:var(--noir); }
+.politica-scroll { flex:1; overflow-y:auto; padding:20px 16px 80px; }
+.politica-hero { text-align:center; padding:24px 0 20px; border-bottom:1px solid rgba(212,175,55,0.1); margin-bottom:24px; }
+.politica-hero-title { font-family:'Cinzel',serif; font-size:18px; font-weight:700; color:var(--gold); letter-spacing:3px; margin-bottom:8px; }
+.politica-hero-sub { font-size:10px; letter-spacing:2px; color:var(--gold4); }
+.politica-section { margin-bottom:24px; }
+.politica-section-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:3px; color:var(--gold3); text-transform:uppercase; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(212,175,55,0.1); }
+.politica-age-box { background:var(--noir3); border:1px solid rgba(212,175,55,0.1); border-radius:10px; padding:16px; margin-bottom:10px; }
+.politica-age-header { font-size:13px; font-weight:600; color:var(--gold2); margin-bottom:8px; }
+.politica-age-body { font-size:12px; line-height:1.6; color:rgba(250,250,250,0.8); }
+.politica-rule { display:flex; gap:12px; padding:12px; background:var(--noir3); border:1px solid rgba(212,175,55,0.06); border-radius:10px; margin-bottom:8px; }
+.politica-rule-icon { font-size:18px; flex-shrink:0; }
+.politica-rule-text { font-size:12px; line-height:1.5; color:rgba(250,250,250,0.8); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:var(--noir); }
+::-webkit-scrollbar-thumb { background:var(--gold4); border-radius:2px; }
+
+/* THEME LIGHT (placeholder) */
+body.theme-light { --noir:#F5F5F0; --noir2:#EBEBEB; --noir3:#E0E0D8; --noir4:#D0D0C8; --noir5:#C0C0B8; --white:#111111; --silver:#555555; }
+</style>
+</head>
+<body>
+
+<div class="global-footer">Grupo AGEA COMERCIAL &nbsp;•&nbsp; CEO: Adelino Graça</div>
+<canvas id="sparkCanvas"></canvas>
+<div class="maintenance-overlay" id="maintenanceOverlay">
+  <div style="font-size:48px">🔧</div>
+  <div class="maintenance-title">EM MANUTENÇÃO</div>
+  <div class="maintenance-sub">Voltamos em breve</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- MODAL ADMIN -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-box">
+    <div class="modal-title">ACESSO RESTRITO</div>
+    <div class="modal-sub">Autenticação de Administrador — Supabase Auth</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-field">
+      <label>E-MAIL</label>
+      <input type="email" class="modal-input" id="adminEmailInput" placeholder="admin@exemplo.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>SENHA</label>
+      <input type="password" class="modal-input" id="adminPwdInput" placeholder="••••••" autocomplete="current-password">
+    </div>
+    <div class="login-spinner" id="loginSpinner">A AUTENTICAR...</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeAdminModal()">CANCELAR</button>
+      <button class="modal-confirm" id="loginBtn" onclick="adminLogin()">ENTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRELOADER -->
+<div class="state active" id="state-preloader">
+  <div class="preloader-ring">
+    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50"/></svg>
+    <div class="preloader-logo-inner">A</div>
+  </div>
+  <div class="preloader-title">ALUNA</div>
+  <div class="preloader-bar-wrap">
+    <div class="preloader-bar" id="preloaderBar"></div>
+  </div>
+  <div class="preloader-msg" id="preloaderMsg">A INICIALIZAR SISTEMA...</div>
+</div>
+
+<!-- HOME -->
+<div class="state" id="state-home">
+  <div class="ticker-wrap">
+    <div class="ticker-inner" id="tickerInner">
+      <span class="ticker-item">🏆 Anónimo ganhou 2.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🎯 Nova sala aberta: 1.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📚 Novo livro: Manual de Liderança <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🔥 500 jogadores activos hoje <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">💰 Total pago este mês: 85.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Anónimo ganhou 2.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🎯 Nova sala aberta: 1.000 Kz <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📚 Novo livro: Manual de Liderança <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🔥 500 jogadores activos hoje <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">💰 Total pago este mês: 85.000 Kz <span class="ticker-sep">◆</span></span>
+    </div>
+  </div>
+  <div class="app-header">
+    <div class="header-logo" id="logoAluna">ALUNA</div>
+    <div class="header-bal">
+      <span class="header-bal-icon">◆</span>
+      <span class="header-bal-val" id="headerBalance">0 Kz</span>
+    </div>
+  </div>
+  <div class="home-scroll">
+    <div class="platinum-card">
+      <div class="card-header">
+        <div><div class="card-brand">ALUNA</div><div class="card-type">PLATINUM MEMBER</div></div>
+        <div style="display:flex;gap:8px;align-items:center;"><div class="card-chip"></div><div class="card-holo"></div></div>
+      </div>
+      <div class="card-balance-label">SALDO DISPONÍVEL</div>
+      <div class="card-balance-val" id="cardBalance">0<span>Kz</span></div>
+      <div class="card-footer">
+        <div><div class="card-id">ID DO UTILIZADOR</div><div class="card-id-val" id="cardUserId">ANA-0000</div></div>
+        <div class="card-actions">
+          <button class="card-btn card-btn-dep" onclick="handleDeposit()">RECARREGAR</button>
+          <button class="card-btn card-btn-lev" onclick="handleWithdraw()">LEVANTAR</button>
+        </div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <div class="hero-btn hero-btn-compete" onclick="enterCompetitionMode()">
+        <div class="hero-btn-icon">⚔️</div>
+        <div class="hero-btn-text"><div class="hero-btn-title">JOGAR PARA COMPETIR</div><div class="hero-btn-sub">Modo competição — ganha prémios reais</div></div>
+        <div class="hero-btn-badge">💰 PRÉMIOS</div>
+      </div>
+      <div class="hero-btn hero-btn-free" onclick="enterFreeMode()">
+        <div class="hero-btn-icon">🎓</div>
+        <div class="hero-btn-text"><div class="hero-btn-title">JOGAR GRATUITAMENTE</div><div class="hero-btn-sub">Modo treino — pratica sem risco</div></div>
+        <div class="hero-btn-badge">GRÁTIS</div>
+      </div>
+    </div>
+    <div class="section-title">— ESTATÍSTICAS —</div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="statJogos">0</div><div class="stat-lbl">PARTIDAS</div></div>
+      <div class="stat-card"><div class="stat-val" id="statVit">0</div><div class="stat-lbl">VITÓRIAS</div></div>
+      <div class="stat-card"><div class="stat-val" id="statGanhos">0</div><div class="stat-lbl">Kz GANHOS</div></div>
+    </div>
+    <div class="secondary-section">
+      <div class="secondary-toggle" id="secondaryToggle" onclick="toggleSecondaryActions()"><span class="secondary-toggle-lbl">MAIS OPÇÕES</span><span class="secondary-toggle-arrow">▼</span></div>
+      <div class="secondary-grid" id="secondaryGrid">
+        <div class="qa-btn" onclick="goTo('market')"><div class="qa-icon">📚</div><div class="qa-label">LIVROS</div><div class="qa-sub">Marketplace</div></div>
+        <div class="qa-btn" onclick="handleDeposit()"><div class="qa-icon">💳</div><div class="qa-label">DEPOSITAR</div><div class="qa-sub">Via Multicaixa</div></div>
+        <div class="qa-btn" onclick="handleWithdraw()"><div class="qa-icon">🏦</div><div class="qa-label">LEVANTAR</div><div class="qa-sub">Para conta bancária</div></div>
+        <div class="qa-btn" onclick="goTo('salas')"><div class="qa-icon">🏛️</div><div class="qa-label">SALAS</div><div class="qa-sub">Ver todas as salas</div></div>
+      </div>
+    </div>
+    <div class="section-title">— RANKING —</div>
+    <div class="leaderboard" id="leaderboard"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<!-- SALAS -->
+<div class="state" id="state-salas">
+  <div class="app-header">
+    <div class="header-logo" id="logoAluna2">ALUNA</div>
+    <div class="header-bal"><span class="header-bal-icon">◆</span><span class="header-bal-val" id="headerBalance2">0 Kz</span></div>
+  </div>
+  <div class="salas-header">⚔ ESCOLHE A TUA SALA DE COMPETIÇÃO ⚔</div>
+  <div class="free-mode-bar" id="freeModeSalasBar">🎓 MODO GRATUITO — SEM RISCO FINANCEIRO</div>
+  <div class="salas-scroll" id="salasContainer"></div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item active" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="state" id="state-lobby">
+  <div class="lobby-inner">
+    <div class="lobby-title">LOBBY</div>
+    <div class="lobby-sub" id="lobbyRoomName">SALA 100 Kz</div>
+    <div class="lobby-countdown" id="lobbyCountdown">7</div>
+    <div class="lobby-cd-lbl">SEGUNDOS PARA COMEÇAR</div>
+    <div class="lobby-players">
+      <div class="lobby-players-title">JOGADORES NA SALA</div>
+      <div class="lobby-list" id="lobbyList"></div>
+    </div>
+    <div class="lobby-room-badge"><span>💰</span><span id="lobbyPrize">100 Kz</span></div>
+  </div>
+</div>
+
+<!-- JOGO -->
+<div class="state" id="state-jogo">
+  <div class="jogo-header">
+    <div class="jogo-progress"><div class="jogo-progress-fill" id="jogoProgressFill" style="width:20%"></div></div>
+    <div class="jogo-qnum" id="jogoQNum">1 / 5</div>
+    <div class="jogo-score-hdr" id="jogoScoreHdr">0 pts</div>
+  </div>
+  <div class="jogo-body">
+    <div class="jogo-timer-wrap">
+      <div class="jogo-timer-ring" id="timerRing">
+        <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="35"/><circle class="fg" id="timerCircle" cx="40" cy="40" r="35"/></svg>
+        <div class="jogo-timer-num" id="timerNum">12</div>
+      </div>
+    </div>
+    <div class="jogo-categoria" id="jogoCat">ANGOLA</div>
+    <div class="jogo-pergunta" id="jogoPergunta">Carregando pergunta...</div>
+    <div class="opcoes" id="opcoes"></div>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div class="state" id="state-resultado">
+  <div class="resultado-inner">
+    <div class="resultado-emoji" id="resEmoji">🏆</div>
+    <div class="resultado-titulo" id="resTitulo">VITÓRIA!</div>
+    <div class="resultado-sub" id="resSub">Excelente desempenho!</div>
+    <div class="resultado-stats">
+      <div class="res-stat-row"><span class="res-stat-lbl">RESPOSTAS CORRETAS</span><span class="res-stat-val" id="resCorretas">5/5</span></div>
+      <div class="res-stat-row"><span class="res-stat-lbl">PONTUAÇÃO</span><span class="res-stat-val" id="resPontos">1500</span></div>
+      <div class="res-stat-row"><span class="res-stat-lbl">POSIÇÃO FINAL</span><span class="res-stat-val" id="resPosicao">1º LUGAR</span></div>
+    </div>
+    <div class="resultado-prize" id="resPrizeBox">
+      <div class="resultado-prize-lbl">PRÉMIO GANHO</div>
+      <div class="resultado-prize-val" id="resPrize">0 Kz</div>
+    </div>
+    <div class="resultado-btns">
+      <button class="btn-primary" onclick="jogarNovamente()">JOGAR NOVAMENTE</button>
+      <button class="btn-secondary" onclick="goTo('home')">VOLTAR AO INÍCIO</button>
+    </div>
+  </div>
+</div>
+
+<!-- MARKETPLACE -->
+<div class="state" id="state-market">
+  <div class="app-header">
+    <div class="header-logo">ALUNA</div>
+    <div class="header-bal"><span class="header-bal-icon">◆</span><span class="header-bal-val" id="headerBalance3">0 Kz</span></div>
+  </div>
+  <div class="ticker-wrap" style="border-bottom:none;border-top:1px solid rgba(212,175,55,0.1);">
+    <div class="ticker-inner">
+      <span class="ticker-item">📖 Marketplace ALUNA — Obras Selecionadas <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Qualidade Garantida <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📱 Entrega Digital Imediata <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📖 Marketplace ALUNA — Obras Selecionadas <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">🏆 Qualidade Garantida <span class="ticker-sep">◆</span></span>
+      <span class="ticker-item">📱 Entrega Digital Imediata <span class="ticker-sep">◆</span></span>
+    </div>
+  </div>
+  <div class="market-scroll">
+    <div class="market-banner"><div class="market-banner-title">📚 LIVRARIA ALUNA</div><div class="market-banner-sub">Obras cuidadosamente selecionadas para o teu crescimento</div></div>
+    <div class="books-grid" id="booksGrid"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item active" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="state" id="state-admin">
+  <div class="admin-header-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+    <div><div class="admin-title">⚙ PAINEL ADMINISTRATIVO</div><div class="admin-sub">ACESSO RESTRITO — GOD MODE V5</div></div>
+    <button class="admin-logout-btn" onclick="adminLogout()">🔓 SAIR</button>
+  </div>
+  <div class="admin-tabs">
+    <div class="admin-tab active" onclick="switchAdminTab('dashboard')">📊 DASH</div>
+    <div class="admin-tab" onclick="switchAdminTab('users')">👤 USERS</div>
+    <div class="admin-tab" onclick="switchAdminTab('questions')">🧠 Q&A</div>
+    <div class="admin-tab" onclick="switchAdminTab('gamecontrol')">🎮 JOGO</div>
+    <div class="admin-tab" onclick="switchAdminTab('marketplace')">📚 LIVROS</div>
+    <div class="admin-tab" onclick="switchAdminTab('ledger')">💰 LEDGER</div>
+    <div class="admin-tab" onclick="switchAdminTab('system')">⚙️ SIS</div>
+  </div>
+  <div class="admin-scroll">
+    <!-- DASHBOARD -->
+    <div class="admin-tab-panel active" id="atab-dashboard">
+      <div class="admin-section">
+        <div class="admin-section-title">VISÃO GERAL DO SISTEMA</div>
+        <div class="admin-stat-grid">
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-jogos">0</div><div class="admin-stat-lbl">PARTIDAS TOTAIS</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-vit">0</div><div class="admin-stat-lbl">VITÓRIAS</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-ganhos">0 Kz</div><div class="admin-stat-lbl">Kz GANHOS</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-livros">0</div><div class="admin-stat-lbl">LIVROS CATÁLOGO</div></div>
+        </div>
+        <div class="admin-stat-grid">
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-salas">5</div><div class="admin-stat-lbl">SALAS ACTIVAS</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="adm-stat-perguntas">50</div><div class="admin-stat-lbl">BANCO DE PERGUNTAS</div></div>
+        </div>
+        <div class="admin-note">📍 V5: Ledger financeiro activo. Todas as transacções são imutáveis.</div>
+      </div>
+      <div class="admin-section">
+        <button class="admin-btn" onclick="refreshDashboard()">↺ ACTUALIZAR DADOS</button>
+        <button class="admin-btn-red" onclick="goTo('home')">SAIR DO ADMIN</button>
+      </div>
+    </div>
+    <!-- USERS -->
+    <div class="admin-tab-panel" id="atab-users">
+      <div class="admin-section">
+        <div class="admin-section-title">UTILIZADOR ACTUAL</div>
+        <div class="admin-user-row"><div class="admin-user-id" id="adm-uid">—</div><div class="admin-user-bal" id="adm-ubal">0 Kz</div></div>
+        <div class="admin-section-title" style="margin-top:16px;">AJUSTE VIA RPC (LEDGER)</div>
+        <input class="admin-input" id="adminBalInput" placeholder="Valor do ajuste (ex: 500 ou -500)" type="number">
+        <button class="admin-btn" onclick="adminAdjBalance()">EXECUTAR AJUSTE NO LEDGER</button>
+        <div class="admin-note">⚠️ V5: Ajustes são registados como transacções imutáveis no ledger. Sem UPDATE de saldo directo.</div>
+      </div>
+    </div>
+    <!-- QUESTIONS -->
+    <div class="admin-tab-panel" id="atab-questions">
+      <div class="admin-section">
+        <div class="admin-section-title">BANCO DE PERGUNTAS (<span id="adm-q-count">50</span>)</div>
+        <div id="adminQList" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">ADICIONAR PERGUNTA</div>
+        <select class="admin-input" id="adminQCat" style="appearance:auto;"><option value="ANGOLA">ANGOLA</option><option value="MUNDO">MUNDO</option><option value="CIÊNCIA">CIÊNCIA</option><option value="HISTÓRIA">HISTÓRIA</option></select>
+        <input class="admin-input" id="adminQText" placeholder="Texto da pergunta...">
+        <input class="admin-input" id="adminQA" placeholder="Opção A (correcta)">
+        <input class="admin-input" id="adminQB" placeholder="Opção B">
+        <input class="admin-input" id="adminQC" placeholder="Opção C">
+        <input class="admin-input" id="adminQD" placeholder="Opção D">
+        <button class="admin-btn" onclick="adminAddQuestion()">ADICIONAR PERGUNTA</button>
+      </div>
+    </div>
+    <!-- GAME CONTROL -->
+    <div class="admin-tab-panel" id="atab-gamecontrol">
+      <div class="admin-section">
+        <div class="admin-section-title">TEMPORIZADORES</div>
+        <div class="admin-param-row"><div><div class="admin-param-lbl">Tempo por Pergunta</div><div class="admin-param-sub">Segundos</div></div><input class="admin-param-input" id="paramTimer" value="12" type="number" min="5" max="60"></div>
+        <div class="admin-param-row"><div><div class="admin-param-lbl">Tempo de Lobby</div><div class="admin-param-sub">Segundos</div></div><input class="admin-param-input" id="paramLobby" value="7" type="number" min="3" max="30"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">VALORES DAS SALAS</div>
+        <div id="adminSalasList"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">PONTUAÇÃO</div>
+        <div class="admin-param-row"><div><div class="admin-param-lbl">Pontos Base</div></div><input class="admin-param-input" id="paramBasePoints" value="100" type="number" min="10" max="500"></div>
+        <div class="admin-param-row"><div><div class="admin-param-lbl">Bónus por Segundo</div></div><input class="admin-param-input" id="paramTimeBonus" value="10" type="number" min="0" max="50"></div>
+        <button class="admin-btn" onclick="applyGameParams();showToast('Parâmetros guardados')">GUARDAR PARÂMETROS</button>
+      </div>
+    </div>
+    <!-- MARKETPLACE ADMIN -->
+    <div class="admin-tab-panel" id="atab-marketplace">
+      <div class="admin-section">
+        <div class="admin-section-title">CATÁLOGO DE LIVROS</div>
+        <div class="admin-books-list" id="adminBooksList"></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">ADICIONAR LIVRO</div>
+        <input class="admin-input" id="adminBookTitle" placeholder="Título do livro...">
+        <input class="admin-input" id="adminBookAuthor" placeholder="Autor...">
+        <input class="admin-input" id="adminBookPrice" placeholder="Preço (ex: 1500)" type="number">
+        <button class="admin-btn" onclick="addBook()">ADICIONAR LIVRO</button>
+      </div>
+    </div>
+    <!-- LEDGER (NOVO V5) -->
+    <div class="admin-tab-panel" id="atab-ledger">
+      <div class="admin-section">
+        <div class="admin-section-title">HISTÓRICO FINANCEIRO (LEDGER IMUTÁVEL)</div>
+        <div class="admin-tx-log" id="adminTxLog">
+          <div class="admin-note">Carregando transacções...</div>
+        </div>
+        <button class="admin-btn" onclick="loadAdminTxLog()" style="margin-top:8px;">↺ ACTUALIZAR LEDGER</button>
+      </div>
+    </div>
+    <!-- SYSTEM -->
+    <div class="admin-tab-panel" id="atab-system">
+      <div class="admin-section">
+        <div class="admin-section-title">TEMA DO SISTEMA</div>
+        <div class="admin-toggle-row"><div><div class="admin-toggle-lbl">Modo Claro</div><div class="admin-toggle-sub">Altera o tema global</div></div><div class="toggle" id="themeToggle" onclick="toggleTheme()"></div></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">TICKER DE NOTÍCIAS</div>
+        <input class="admin-input" id="adminTickerInput" placeholder="Nova mensagem do ticker...">
+        <button class="admin-btn" onclick="addTickerMsg()">ADICIONAR MENSAGEM</button>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-title">MODO MANUTENÇÃO</div>
+        <div class="admin-toggle-row"><div><div class="admin-toggle-lbl">Activar Manutenção</div><div class="admin-toggle-sub">Bloqueia acesso</div></div><div class="toggle" id="maintenanceToggle" onclick="toggleMaintenance()"></div></div>
+      </div>
+      <div class="admin-section"><button class="admin-btn-red" onclick="goTo('home')">SAIR DO ADMIN</button></div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+</div>
+
+<!-- SOBRE NÓS -->
+<div class="state" id="state-sobre">
+  <div class="app-header"><div class="header-logo" style="cursor:pointer;" onclick="goTo('home')">ALUNA</div><div class="header-bal"><span class="header-bal-icon">◆</span><span class="header-bal-val" id="headerBalanceSobre">0 Kz</span></div></div>
+  <div class="sobre-scroll">
+    <div class="sobre-hero"><div class="sobre-hero-title">SOBRE NÓS</div><div class="sobre-hero-sub">MANIFESTO INSTITUCIONAL — ALUNA V5</div></div>
+    <div class="sobre-section"><div class="sobre-section-title">I. O Problema do Nosso Tempo</div><p class="sobre-text">Vivemos numa era de distração em massa. As redes sociais transformaram-se nos maiores consumidores de atenção da história da humanidade. Bilhões de horas são desperdiçadas diariamente em conteúdos efémeros.</p><p class="sobre-text">O utilizador médio passa mais de quatro horas por dia em plataformas de entretenimento digital — tempo que poderia ser investido no desenvolvimento de competências.</p></div>
+    <div class="sobre-section"><div class="sobre-section-title">II. A Nossa Proposta</div><p class="sobre-text">A ALUNA nasceu da convicção de que é possível criar um ambiente digital que não apenas entretém, mas que transforma. Cada minuto passado na ALUNA é um minuto investido.</p><div class="sobre-quote">"A atenção é o recurso mais valioso do ser humano. Quem a controla, controla o seu destino."</div></div>
+    <div class="sobre-section"><div class="sobre-section-title">III. Filosofia e Valores</div><p class="sobre-text">A ALUNA é guiada por três princípios: <strong style="color:var(--gold2)">Disciplina</strong>, <strong style="color:var(--gold2)">Conhecimento</strong> e <strong style="color:var(--gold2)">Excelência</strong>.</p></div>
+    <div class="sobre-brand-box"><div class="sobre-brand-name">GRUPO AGEA COMERCIAL</div><div class="sobre-brand-ceo">CEO &amp; FUNDADOR: ADELINO GRAÇA</div><div style="font-size:10px;color:var(--gold4);margin-top:8px;letter-spacing:1px;">ALUNA é uma marca do Grupo AGEA COMERCIAL</div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item active" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<!-- POLÍTICA -->
+<div class="state" id="state-politica">
+  <div class="app-header"><div class="header-logo" style="cursor:pointer;" onclick="goTo('home')">ALUNA</div><div class="header-bal"><span class="header-bal-icon">◆</span><span class="header-bal-val" id="headerBalancePolitica">0 Kz</span></div></div>
+  <div class="politica-scroll">
+    <div class="politica-hero"><div class="politica-hero-title">POLÍTICA DE UTILIZAÇÃO</div><div class="politica-hero-sub">TERMOS E CONDIÇÕES — ALUNA V5</div></div>
+    <div class="politica-section"><div class="politica-section-title">Regras por Faixa Etária</div>
+      <div class="politica-age-box"><div class="politica-age-header">👦 MENORES DE 18 ANOS</div><div class="politica-age-body">Acesso <strong style="color:var(--gold2)">exclusivamente ao Modo Gratuito</strong>. Sem transacções financeiras reais.</div></div>
+      <div class="politica-age-box"><div class="politica-age-header">🧑 MAIORES DE 18 ANOS</div><div class="politica-age-body">Acesso ao <strong style="color:var(--gold2)">Modo Competição</strong> com prémios reais em Kwanza.</div></div>
+    </div>
+    <div class="politica-section"><div class="politica-section-title">Regras Gerais</div>
+      <div class="politica-rule"><div class="politica-rule-icon">✅</div><div class="politica-rule-text"><strong>Uso Responsável:</strong> A plataforma deve ser utilizada com responsabilidade e equilíbrio.</div></div>
+      <div class="politica-rule"><div class="politica-rule-icon">🚫</div><div class="politica-rule-text"><strong>Proibição de Fraude:</strong> Manipulação, bots, scripts automáticos ou múltiplas contas resultam em banimento permanente.</div></div>
+      <div class="politica-rule"><div class="politica-rule-icon">🔒</div><div class="politica-rule-text"><strong>Integridade Financeira V5:</strong> Todas as transacções são registadas num ledger imutável. Tentativas de manipulação são detectadas e bloqueadas automaticamente.</div></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">INÍCIO</div></div>
+    <div class="nav-item" onclick="goTo('salas')"><div class="nav-icon">⚔️</div><div class="nav-lbl">SALAS</div></div>
+    <div class="nav-item" onclick="goTo('market')"><div class="nav-icon">📚</div><div class="nav-lbl">LIVROS</div></div>
+    <div class="nav-item" onclick="goTo('sobre')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">SOBRE</div></div>
+    <div class="nav-item active" onclick="goTo('politica')"><div class="nav-icon">⚖️</div><div class="nav-lbl">POLÍTICA</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+//  SUPABASE — CONEXÃO
+// ═══════════════════════════════════════
+const SUPABASE_URL = 'https://enojfnwarrroaobxurrl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVub2pmbndhcnJyb2FvYnh1cnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjMxMjMsImV4cCI6MjA5MTEzOTEyM30.x0iTVooX8wdsAhwdcH6oHMnngIH49uHuEGNnPZbrHog';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════
+//  ESTADO GLOBAL (V5)
+// ═══════════════════════════════════════
+const APP = {
+  currentState: 'preloader',
+  userId: '',
+  balance: 0,                 // Source of truth: RPC/VIEW, NOT frontend
+  stats: { jogos:0, vitorias:0, ganhos:0 },
+  currentSala: null,
+  gameSession: null,          // V5: UUID da sessão activa
+  jogoState: {
+    perguntas: [], qIndex:0, score:0, corretas:0,
+    timer:null, timerVal:12, blocked:false
+  },
+  // V5: Behavioral Engine
+  behavioral: {
+    accuracy_10: [],          // últimas 10 sessões de accuracy
+    lossStreak: 0,
+    difficultyMod: 0          // -20% ou +15% na dificuldade
+  },
+  admin: {
+    authenticated: false,
+    tapTimestamps: [],        // V5: 15-tap com 300ms reset
+    user: null
+  },
+  maintenance: false,
+  freeMode: false,
+  freeBalance: 2000,
+  salas: [
+    { id:'s100',  nome:'SALA BRONZE',   preco:100,  premio:180,  icon:'🥉', desc:'Ideal para começar', locked:false },
+    { id:'s300',  nome:'SALA PRATA',    preco:300,  premio:540,  icon:'🥈', desc:'Competição moderada', locked:false },
+    { id:'s500',  nome:'SALA OURO',     preco:500,  premio:900,  icon:'🥇', desc:'Para os mais preparados', locked:false },
+    { id:'s1000', nome:'SALA DIAMANTE', preco:1000, premio:1800, icon:'💎', desc:'Nível avançado', locked:false },
+    { id:'s2000', nome:'SALA ÉLITE',    preco:2000, premio:3600, icon:'👑', desc:'Apenas para campeões', locked:false }
+  ],
+  books: [
+    { id:'b1', titulo:'A Arte de Vencer', autor:'Hélder Santos', preco:1200, cor:'#1a0a2e', cor2:'#6B21A8' },
+    { id:'bag1', titulo:'Domínio Mental', autor:'Adelino Graça', preco:1600, cor:'#0a0d1a', cor2:'#1B3A6B' },
+    { id:'b2', titulo:'Angola: Terra de Futuro', autor:'Nkosi Dlamini', preco:900, cor:'#0a1a0a', cor2:'#166534' },
+    { id:'b3', titulo:'Inteligência Emocional', autor:'Maria do Céu', preco:800, cor:'#1a0a0a', cor2:'#991B1B' },
+    { id:'b4', titulo:'Finanças Pessoais', autor:'Augusto Lopes', preco:1500, cor:'#1a1200', cor2:'#92400E' },
+    { id:'bag2', titulo:'Estratégia e Poder', autor:'Adelino Graça', preco:1900, cor:'#0d0a0a', cor2:'#7C1D1D' },
+    { id:'b5', titulo:'Liderança Africana', autor:'Chimamanda Osei', preco:1100, cor:'#0a0a1a', cor2:'#1E3A5F' },
+    { id:'b6', titulo:'Empreendedorismo Digital', autor:'Paulo Ferreira', preco:1800, cor:'#0d1a0d', cor2:'#065F46' }
+  ],
+  gameParams: { timerVal:12, lobbyVal:7, basePoints:100, timeBonus:10 },
+  adminTab: 'dashboard',
+  processes: []
+};
+
+// ═══════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════
+function genUUID(){
+  return 'xxxx-xxxx-xxxx'.replace(/x/g,()=>(Math.random()*16|0).toString(16));
+}
+function genUserId(){
+  const p=['ANA','LUA','ZAI','MBU','KWA','UIG'];
+  return p[Math.random()*p.length|0]+'-'+(1000+Math.random()*8999|0);
+}
+function regProcess(id){ APP.processes.push(id); return id; }
+function killProcesses(){
+  APP.processes.forEach(id=>{ clearInterval(id); clearTimeout(id); });
+  APP.processes = [];
+  if(APP.jogoState.timer){ clearInterval(APP.jogoState.timer); APP.jogoState.timer=null; }
+}
+
+// ═══════════════════════════════════════
+//  NOMES ANGOLANOS (BOTS)
+// ═══════════════════════════════════════
+const NOMES_ANGOLANOS = [
+  'Kuanda Neto','Simão Kafuxi','Beatriz Muanda','Domingos Lueji','Esperança Ndongo',
+  'Feliciano Buta','Graça Kimbangu','Hilário Savimbi','Isabela Luena','Joaquim Mbundo',
+  'Kátia Zinga','Leonel Cahama','Marisa Nzinga','Narciso Waku','Olívia Dundo',
+  'Paulo Mayombe','Quitéria Longa','Roberto Cafunfo','Sandra Moxico','Tiago Cunene',
+  'Úrsula Cuvango','Valter Bie','Wanda Cuando','Xavier Namibe','Yolanda Kwanza',
+  'Zeca Malanje','Armindo Uige','Bela Zaire','Carlos Luanda','Dora Benguela',
+  'Elias Huila','Fátima Huambo','Gonçalo Soyo','Helena Ondjiva','Igor Lobito',
+  'Joana Cabinda','Kilamba Silva','Laura Dundo','Marco Sumbe','Nádia Caxito',
+  'Osvaldo Mbanza','Patrícia Cuito','Quirino Saurimo','Rosa Luena','Sérgio Menongue',
+  'Teresa Ndalatando','Ulisses Benguela','Vera Luanda','Wilson Malanje','Zulmira Uige'
+];
+
+// ═══════════════════════════════════════
+//  50 PERGUNTAS + DIFFICULTY LEVELS (V5)
+// ═══════════════════════════════════════
+const PERGUNTAS_DB = [
+  // ANGOLA — difficulty 1-3
+  {cat:'ANGOLA',p:'Qual é a capital de Angola?',ops:['Luanda','Benguela','Huambo','Lubango'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Em que ano Angola se tornou independente?',ops:['1975','1974','1976','1980'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é a moeda oficial de Angola?',ops:['Kwanza','Escudo','Real','Franco'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é o rio mais longo de Angola?',ops:['Rio Kwanza','Rio Congo','Rio Zambeze','Rio Cunene'],r:0,diff:2},
+  {cat:'ANGOLA',p:'Qual é a língua oficial de Angola?',ops:['Português','Kimbundu','Umbundu','Kikongo'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é o maior porto de Angola?',ops:['Porto de Luanda','Porto do Lobito','Porto de Namibe','Porto de Cabinda'],r:0,diff:2},
+  {cat:'ANGOLA',p:'Qual é o planalto mais famoso de Angola?',ops:['Planalto Central','Planalto Norte','Planalto Sul','Planalto Leste'],r:0,diff:2},
+  {cat:'ANGOLA',p:'Quantas províncias tem Angola?',ops:['18','16','20','22'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é o animal símbolo de Angola?',ops:['Palanca Negra','Elefante','Leão','Búfalo'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual era o nome colonial de Angola?',ops:['Angola Portuguesa','África Ocidental Portuguesa','Congo Português','Lusitânia Africana'],r:1,diff:3},
+  {cat:'ANGOLA',p:'Quem foi o primeiro presidente de Angola?',ops:['Agostinho Neto','Jonas Savimbi','Holden Roberto','Eduardo dos Santos'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Em que oceano Angola tem costa?',ops:['Atlântico','Índico','Pacífico','Ártico'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é a maior cidade de Angola?',ops:['Luanda','Huambo','Benguela','Lobito'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é o principal produto de exportação?',ops:['Petróleo','Diamantes','Café','Milho'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é a dança tradicional mais famosa?',ops:['Semba','Kizomba','Kuduro','Rebita'],r:0,diff:2},
+  {cat:'ANGOLA',p:'O que significa "Angola" em língua local?',ops:['Terra de N\'gola','Terra do Sol','Rio Grande','Povo Livre'],r:0,diff:3},
+  {cat:'ANGOLA',p:'Qual é a montanha mais alta de Angola?',ops:['Morro Moco','Serra da Chela','Serra de Taba','Monte Negro'],r:0,diff:2},
+  {cat:'ANGOLA',p:'Qual partido governou desde a independência?',ops:['MPLA','UNITA','FNLA','PRS'],r:0,diff:1},
+  {cat:'ANGOLA',p:'Qual é a principal língua bantu de Angola?',ops:['Kimbundu','Suaíli','Zulu','Mandinga'],r:0,diff:2},
+  {cat:'ANGOLA',p:'Em que continente está Angola?',ops:['África','América','Ásia','Europa'],r:0,diff:1},
+  // MUNDO — difficulty 1-3
+  {cat:'MUNDO',p:'Qual é o maior oceano do mundo?',ops:['Pacífico','Atlântico','Índico','Ártico'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é a capital da França?',ops:['Paris','Lyon','Marselha','Nice'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o país mais populoso do mundo?',ops:['Índia','China','EUA','Indonésia'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é o maior deserto do mundo?',ops:['Saara','Gobi','Atacama','Antártica'],r:3,diff:3},
+  {cat:'MUNDO',p:'Quantos continentes tem o mundo?',ops:['7','5','6','8'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o elemento mais abundante na Terra?',ops:['Oxigénio','Azoto','Carbono','Silício'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é o maior planeta do sistema solar?',ops:['Júpiter','Saturno','Neptuno','Urano'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o rio mais longo do mundo?',ops:['Nilo','Amazonas','Yangtzé','Mississípi'],r:0,diff:2},
+  {cat:'MUNDO',p:'Em que país se encontra a Torre Eiffel?',ops:['França','Itália','Bélgica','Suíça'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é a capital do Brasil?',ops:['Brasília','São Paulo','Rio de Janeiro','Salvador'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o metal mais valioso do mundo?',ops:['Ouro','Prata','Platina','Ródio'],r:3,diff:3},
+  {cat:'MUNDO',p:'Quem pintou a Mona Lisa?',ops:['Leonardo da Vinci','Michelangelo','Rafael','Botticelli'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o país com maior área?',ops:['Rússia','Canadá','China','EUA'],r:0,diff:1},
+  {cat:'MUNDO',p:'Em que ano começou a 2ª Guerra Mundial?',ops:['1939','1940','1941','1938'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é a moeda dos EUA?',ops:['Dólar','Euro','Libra','Iene'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o animal mais rápido do mundo?',ops:['Guepardo','Falcão Peregrino','Gaivina','Leão'],r:1,diff:3},
+  {cat:'MUNDO',p:'Quantos ossos tem o corpo humano adulto?',ops:['206','204','208','210'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é a capital da Alemanha?',ops:['Berlim','Munique','Hamburgo','Frankfurt'],r:0,diff:1},
+  {cat:'MUNDO',p:'Quem foi o primeiro homem na Lua?',ops:['Neil Armstrong','Buzz Aldrin','Yuri Gagarin','Alan Shepard'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual é o país com mais medalhas Olímpicas?',ops:['EUA','URSS/Rússia','China','Alemanha'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é a religião com mais praticantes?',ops:['Cristã','Islã','Hindu','Budista'],r:0,diff:1},
+  {cat:'MUNDO',p:'Quantos países tem a União Europeia?',ops:['27','28','25','30'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é o símbolo químico do ouro?',ops:['Au','Or','Go','Ag'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é a capital da China?',ops:['Pequim','Xangai','Hong Kong','Cantão'],r:0,diff:1},
+  {cat:'MUNDO',p:'Qual instrumento de corda mais tocado?',ops:['Guitarra','Violino','Piano','Baixo'],r:0,diff:1},
+  {cat:'MUNDO',p:'Quem escreveu "Dom Quixote"?',ops:['Cervantes','Shakespeare','Dante','Camões'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual idioma mais falado no mundo?',ops:['Inglês','Mandarim','Espanhol','Hindi'],r:1,diff:3},
+  {cat:'MUNDO',p:'Qual país tem maior número de ilhas?',ops:['Suécia','Filipinas','Indonésia','Noruega'],r:0,diff:3},
+  {cat:'MUNDO',p:'Qual é a velocidade da luz (aprox.)?',ops:['300.000 km/s','150.000 km/s','450.000 km/s','200.000 km/s'],r:0,diff:2},
+  {cat:'MUNDO',p:'Qual é o osso mais longo do corpo humano?',ops:['Fémur','Tíbia','Úmero','Rádio'],r:0,diff:2}
+];
+
+// ═══════════════════════════════════════
+//  CANVAS FAGULHAS
+// ═══════════════════════════════════════
+(function initCanvas(){
+  const canvas=document.getElementById('sparkCanvas'),ctx=canvas.getContext('2d');
+  let W,H,sparks=[];
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  window.addEventListener('resize',resize); resize();
+  for(let i=0;i<30;i++) sparks.push(mk());
+  function mk(){return{x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.5,vy:-Math.random()*0.8-0.2,life:Math.random(),size:Math.random()*1.5+0.5,alpha:Math.random()*0.4+0.1};}
+  (function loop(){ctx.clearRect(0,0,W,H);sparks.forEach((s,i)=>{s.x+=s.vx;s.y+=s.vy;s.life-=0.003;if(s.life<=0)sparks[i]=mk();ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,Math.PI*2);ctx.fillStyle=`rgba(212,175,55,${s.life*s.alpha})`;ctx.fill();});requestAnimationFrame(loop);})();
+})();
+
+// ═══════════════════════════════════════
+//  PERSISTÊNCIA V5 — RPC-FIRST
+// ═══════════════════════════════════════
+function saveLocalCache(){
+  try{localStorage.setItem('aluna_balance',APP.balance);localStorage.setItem('aluna_stats',JSON.stringify(APP.stats));localStorage.setItem('aluna_uid',APP.userId);}catch(e){}
+}
+function loadLocalCache(){
+  try{const b=localStorage.getItem('aluna_balance');if(b!==null)APP.balance=parseInt(b)||0;const s=localStorage.getItem('aluna_stats');if(s)APP.stats={...APP.stats,...JSON.parse(s)};const u=localStorage.getItem('aluna_uid');if(u)APP.userId=u;}catch(e){}
+}
+
+async function syncBalanceFromServer(){
+  try{
+    const{data,error}=await db.rpc('rpc_get_balance',{p_user_id:APP.userId});
+    if(!error && data!==null) APP.balance=data;
+    updateBalanceUI();
+    saveLocalCache();
+  }catch(e){console.warn('syncBalance error:',e);}
+}
+
+async function loadData(){
+  loadLocalCache();
+  try{
+    // Books
+    const{data:books}=await db.from('books').select('*');
+    if(books&&books.length>0) APP.books=books.map(b=>({id:b.id,titulo:b.titulo,autor:b.autor,preco:b.preco,cor:b.cor,cor2:b.cor2}));
+    // Salas
+    const{data:sc}=await db.from('salas_config').select('*');
+    if(sc) sc.forEach(c=>{const s=APP.salas.find(x=>x.id===c.id);if(s)s.locked=c.locked;});
+    // Game params
+    const{data:gp}=await db.from('app_config').select('*').eq('key','game_params').maybeSingle();
+    if(gp&&gp.value) APP.gameParams={...APP.gameParams,...gp.value};
+    // Player stats (from players table — fast counters)
+    if(APP.userId){
+      const{data:p}=await db.from('players').select('jogos,vitorias,ganhos').eq('user_id',APP.userId).maybeSingle();
+      if(p){APP.stats.jogos=p.jogos??0;APP.stats.vitorias=p.vitorias??0;APP.stats.ganhos=p.ganhos??0;}
+    }
+    // Behavioral data
+    try{
+      const{data:acc}=await db.rpc('rpc_get_player_accuracy',{p_user_id:APP.userId});
+      if(acc) APP.behavioral.accuracy_10=acc;
+    }catch(e){}
+  }catch(e){console.warn('loadData error:',e);}
+}
+
+// ═══════════════════════════════════════
+//  MÁQUINA DE ESTADOS
+// ═══════════════════════════════════════
+function goTo(state){
+  killProcesses();
+  if(state==='admin'&&!APP.admin.authenticated){openAdminModal();return;}
+  document.querySelectorAll('.state').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('state-'+state);
+  if(!el)return;
+  el.classList.add('active');
+  APP.currentState=state;
+  onEnter(state);
+}
+function onEnter(state){
+  switch(state){
+    case'home':renderHome();break;case'salas':renderSalas();break;
+    case'lobby':startLobby();break;case'jogo':startJogo();break;
+    case'market':renderMarket();break;case'admin':renderAdmin();break;
+    case'sobre':case'politica':updateBalanceUI();break;
+  }
+}
+
+// ═══════════════════════════════════════
+//  UI UPDATES
+// ═══════════════════════════════════════
+function updateBalanceUI(){
+  const fmt=APP.balance.toLocaleString('pt-AO')+' Kz';
+  ['headerBalance','headerBalance2','headerBalance3','headerBalanceSobre','headerBalancePolitica'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=fmt;});
+  const cb=document.getElementById('cardBalance');if(cb)cb.innerHTML=APP.balance.toLocaleString('pt-AO')+'<span>Kz</span>';
+  const uid=document.getElementById('cardUserId');if(uid)uid.textContent=APP.userId;
+}
+function animateBalance(amount){
+  const coin=document.createElement('div');coin.className='coin-anim';
+  coin.textContent=(amount>0?'+':'')+amount.toLocaleString('pt-AO')+' Kz';
+  coin.style.cssText='left:50%;top:40%;transform:translateX(-50%)';
+  document.body.appendChild(coin);
+  regProcess(setTimeout(()=>{if(coin.parentNode)coin.parentNode.removeChild(coin);},1600));
+}
+
+// ═══════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════
+function renderHome(){
+  updateBalanceUI();
+  document.getElementById('statJogos').textContent=APP.stats.jogos;
+  document.getElementById('statVit').textContent=APP.stats.vitorias;
+  document.getElementById('statGanhos').textContent=APP.stats.ganhos;
+  renderLeaderboard();
+}
+function renderLeaderboard(){
+  const lb=document.getElementById('leaderboard');if(!lb)return;
+  const players=NOMES_ANGOLANOS.slice(0,8).map((n,i)=>({nome:n,pts:5000-i*400+(Math.random()*200|0)}));
+  players.sort((a,b)=>b.pts-a.pts);
+  lb.innerHTML=players.map((p,i)=>{
+    const init=p.nome.split(' ').map(x=>x[0]).join('').substring(0,2);
+    const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    return`<div class="lb-item"><div class="lb-rank ${rc}">${i+1}</div><div class="lb-avatar">${init}</div><div class="lb-info"><div class="lb-name">${p.nome}</div><div class="lb-pts">PONTUAÇÃO</div></div><div class="lb-val">${p.pts.toLocaleString()}</div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+//  SALAS — V5 RPC ENTRY
+// ═══════════════════════════════════════
+function renderSalas(){
+  updateBalanceUI();
+  const c=document.getElementById('salasContainer');if(!c)return;
+  c.innerHTML=APP.salas.map(s=>{
+    return`<div class="sala-card${s.locked?' locked':''}" onclick="enterSala('${s.id}')">
+      <div class="sala-icon">${s.icon}</div><div class="sala-info"><div class="sala-name">${s.nome}</div><div class="sala-desc">${s.desc}</div><div class="sala-players">🟢 ${8+Math.random()*20|0} jogadores online</div></div>
+      <div class="sala-prize"><div class="sala-prize-val">${s.preco.toLocaleString()}</div><div class="sala-prize-lbl">Kz ENTRADA</div><div class="sala-prize-lbl" style="color:var(--gold2);margin-top:4px;">+${s.premio.toLocaleString()} Kz</div></div></div>`;
+  }).join('');
+}
+
+async function enterSala(id){
+  if(APP.freeMode) return enterSalaFree(id);
+  const sala=APP.salas.find(s=>s.id===id);if(!sala)return;
+  if(sala.locked){showToast('Sala bloqueada','error');return;}
+  if(APP.balance<sala.preco){showToast('Saldo insuficiente','error');return;}
+
+  // V5: Generate game session UUID
+  const session=genUUID();
+
+  // V5: Call RPC — server handles deduction + idempotency
+  try{
+    const{data,error}=await db.rpc('rpc_enter_sala',{
+      p_user_id:APP.userId,
+      p_sala_id:sala.id,
+      p_entry_fee:sala.preco,
+      p_game_session:session
+    });
+    if(error||!data||data.status!=='ok'){
+      showToast(data?.message||'Erro ao entrar na sala','error');
+      return;
+    }
+    APP.balance=data.balance;
+    APP.gameSession=session;
+    APP.currentSala=sala;
+    saveLocalCache();
+    goTo('lobby');
+  }catch(e){
+    console.error('enterSala RPC error:',e);
+    showToast('Erro de conexão','error');
+  }
+}
+
+function enterSalaFree(id){
+  const sala=APP.salas.find(s=>s.id===id);if(!sala)return;
+  if(sala.locked){showToast('Sala bloqueada','error');return;}
+  if(APP.freeBalance<sala.preco){showToast('Saldo virtual insuficiente','error');return;}
+  APP.currentSala=sala;APP.freeBalance-=sala.preco;APP.gameSession='free_'+genUUID();
+  goTo('lobby');
+}
+
+// ═══════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════
+function startLobby(){
+  const sala=APP.currentSala;if(!sala)return;
+  document.getElementById('lobbyRoomName').textContent=sala.nome.toUpperCase();
+  document.getElementById('lobbyPrize').textContent=sala.premio.toLocaleString()+' Kz';
+  const list=document.getElementById('lobbyList');list.innerHTML='';
+  addLobbyPlayer(APP.userId,'TU');
+  let cd=APP.gameParams.lobbyVal||7;
+  const cdEl=document.getElementById('lobbyCountdown');cdEl.textContent=cd;cdEl.style.color='';
+  const bots=[...NOMES_ANGOLANOS].sort(()=>Math.random()-0.5);let bi=0;
+  const bI=regProcess(setInterval(()=>{if(bi<5&&list.children.length<6){addLobbyPlayer(bots[bi],'BOT');bi++;}},1200));
+  const cI=regProcess(setInterval(()=>{cd--;cdEl.textContent=cd;if(cd<=3)cdEl.style.color='var(--red2)';if(cd<=0){clearInterval(bI);clearInterval(cI);goTo('jogo');}},1000));
+}
+function addLobbyPlayer(nome,badge){
+  const list=document.getElementById('lobbyList');if(!list)return;
+  const el=document.createElement('div');el.className='lobby-player';
+  el.innerHTML=`<div class="lobby-player-dot"></div><div class="lobby-player-name">${nome}</div><div class="lobby-player-badge">${badge}</div>`;
+  list.appendChild(el);
+}
+
+// ═══════════════════════════════════════
+//  STAGE 2: BEHAVIORAL ENGINE (V5)
+// ═══════════════════════════════════════
+function computeBehavioralDifficulty(){
+  const b=APP.behavioral;
+  const hist=b.accuracy_10;
+  if(!hist||hist.length===0) return 0; // neutral
+
+  // Calculate recent accuracy
+  const totalCorrect=hist.reduce((s,h)=>s+(h.corretas||0),0);
+  const totalQ=hist.reduce((s,h)=>s+(h.total||5),0);
+  const accuracy=totalQ>0?totalCorrect/totalQ:0;
+
+  // Loss streak from recent results
+  let streak=0;
+  for(let i=hist.length-1;i>=0;i--){
+    if((hist[i].corretas||0)<4) streak++; else break;
+  }
+  b.lossStreak=streak;
+
+  // Apply rules:
+  // If streak >= 3 losses → difficulty -20% (easier questions)
+  if(streak>=3){
+    b.difficultyMod=-0.20;
+    return -1; // prefer easier
+  }
+  // If accuracy > 80% → difficulty +15% (harder + cognitive trap)
+  if(accuracy>0.80){
+    b.difficultyMod=0.15;
+    return 1; // prefer harder
+  }
+  b.difficultyMod=0;
+  return 0; // neutral
+}
+
+function selectQuestionsWithBehavior(){
+  const bias=computeBehavioralDifficulty();
+  const pool=[...PERGUNTAS_DB];
+
+  // Sort by difficulty based on bias
+  if(bias<0){
+    // Easier: prefer diff 1
+    pool.sort((a,b)=>(a.diff||2)-(b.diff||2));
+  } else if(bias>0){
+    // Harder: prefer diff 3, include cognitive traps
+    pool.sort((a,b)=>(b.diff||2)-(a.diff||2));
+  } else {
+    // Neutral: shuffle
+    pool.sort(()=>Math.random()-0.5);
+  }
+
+  // Pick 5, but add some randomness
+  const selected=[];
+  const used=new Set();
+  for(const q of pool){
+    if(selected.length>=5) break;
+    const key=q.p;
+    if(!used.has(key)){used.add(key);selected.push(q);}
+  }
+
+  // If bias>0 (high accuracy), apply Near-Miss Factor:
+  // Shuffle answer positions to create cognitive traps
+  if(bias>0){
+    selected.forEach(q=>{
+      // 30% chance to swap correct answer with a near-miss position
+      if(Math.random()<0.3 && q.ops.length===4){
+        // Swap positions of two wrong answers to create confusion
+        const wrongIdxs=[0,1,2,3].filter(i=>i!==q.r);
+        const swapA=wrongIdxs[0],swapB=wrongIdxs[1];
+        [q.ops[swapA],q.ops[swapB]]=[q.ops[swapB],q.ops[swapA]];
+      }
+    });
+  }
+
+  return selected;
+}
+
+// ═══════════════════════════════════════
+//  JOGO
+// ═══════════════════════════════════════
+function startJogo(){
+  const js=APP.jogoState;
+  js.perguntas=selectQuestionsWithBehavior();
+  js.qIndex=0;js.score=0;js.corretas=0;js.blocked=false;
+  renderPergunta();
+}
+function renderPergunta(){
+  const js=APP.jogoState,q=js.perguntas[js.qIndex];
+  if(!q){endJogo();return;}
+  document.getElementById('jogoProgressFill').style.width=((js.qIndex+1)/5*100)+'%';
+  document.getElementById('jogoQNum').textContent=(js.qIndex+1)+' / 5';
+  document.getElementById('jogoScoreHdr').textContent=js.score+' pts';
+  document.getElementById('jogoCat').textContent=q.cat;
+  document.getElementById('jogoPergunta').textContent=q.p;
+  const L=['A','B','C','D'];
+  document.getElementById('opcoes').innerHTML=q.ops.map((op,i)=>`<div class="opcao" id="op${i}" onclick="responder(${i})"><div class="opcao-letra">${L[i]}</div><div class="opcao-texto">${op}</div></div>`).join('');
+  js.blocked=false;
+  startTimer();
+}
+function startTimer(){
+  const js=APP.jogoState,mx=APP.gameParams.timerVal||12;
+  if(js.timer)clearInterval(js.timer);
+  js.timerVal=mx;updateTimerUI(mx);
+  const ring=document.getElementById('timerRing');ring.classList.remove('timer-alert','timer-danger');
+  js.timer=setInterval(()=>{
+    js.timerVal--;updateTimerUI(js.timerVal);
+    const r2=document.getElementById('timerRing');
+    if(js.timerVal<=Math.floor(mx/2)&&js.timerVal>Math.floor(mx/4)){r2.classList.add('timer-alert');r2.classList.remove('timer-danger');}
+    if(js.timerVal<=Math.floor(mx/4)){r2.classList.add('timer-danger');r2.classList.remove('timer-alert');}
+    if(js.timerVal<=0){clearInterval(js.timer);js.timer=null;timeOut();}
+  },1000);
+}
+function updateTimerUI(val){
+  const circ=document.getElementById('timerCircle'),num=document.getElementById('timerNum');
+  if(!circ||!num)return;
+  const mx=APP.gameParams.timerVal||12;
+  circ.style.strokeDashoffset=220-(val/mx)*220;
+  num.textContent=val;
+}
+function responder(idx){
+  const js=APP.jogoState;if(js.blocked)return;js.blocked=true;
+  if(js.timer){clearInterval(js.timer);js.timer=null;}
+  const q=js.perguntas[js.qIndex];
+  document.querySelectorAll('.opcao').forEach(o=>o.classList.add('disabled'));
+  if(idx===q.r){
+    document.querySelectorAll('.opcao')[idx].classList.add('correct');
+    js.corretas++;
+    const pts=(APP.gameParams.basePoints||100)+js.timerVal*(APP.gameParams.timeBonus||10);
+    js.score+=pts;
+    document.getElementById('jogoScoreHdr').textContent=js.score+' pts';
+    showToast('Correto! +'+pts+' pontos','success');
+  } else {
+    document.querySelectorAll('.opcao')[idx].classList.add('wrong');
+    document.querySelectorAll('.opcao')[q.r].classList.add('correct');
+    showToast('Errado!','error');
+  }
+  regProcess(setTimeout(()=>{js.qIndex++;if(js.qIndex>=5)endJogo();else renderPergunta();},1400));
+}
+function timeOut(){
+  const js=APP.jogoState;if(js.blocked)return;js.blocked=true;
+  const q=js.perguntas[js.qIndex];
+  document.querySelectorAll('.opcao').forEach(o=>o.classList.add('disabled'));
+  document.querySelectorAll('.opcao')[q.r].classList.add('correct');
+  showToast('Tempo esgotado!','error');
+  regProcess(setTimeout(()=>{js.qIndex++;if(js.qIndex>=5)endJogo();else renderPergunta();},1400));
+}
+
+// ═══════════════════════════════════════
+//  END JOGO — V5: RPC REWARD CALCULATION
+//  FRONTEND PROIBIDO DE CALCULAR PRÉMIO
+// ═══════════════════════════════════════
+async function endJogo(){
+  if(APP.freeMode) return endJogoFree();
+
+  const js=APP.jogoState,sala=APP.currentSala;
+  const total=js.corretas;
+
+  // V5: Call RPC — server decides reward amount
+  try{
+    const{data,error}=await db.rpc('rpc_finish_game',{
+      p_user_id:APP.userId,
+      p_game_session:APP.gameSession,
+      p_corretas:total,
+      p_score:js.score,
+      p_sala_id:sala.id,
+      p_sala_premio:sala.premio
+    });
+
+    if(error){console.error('rpc_finish_game error:',error);showToast('Erro ao finalizar','error');return;}
+
+    // Server returns: {status, won, prize, corretas, score, balance}
+    const won=data.won;
+    const prize=data.prize;
+    APP.balance=data.balance;
+    APP.stats.jogos++;
+    if(won){APP.stats.vitorias++;APP.stats.ganhos+=prize;animateBalance(prize);}
+    saveLocalCache();
+    updateBalanceUI();
+
+    // Update behavioral history locally
+    APP.behavioral.accuracy_10.push({corretas:total,total:5});
+    if(APP.behavioral.accuracy_10.length>10) APP.behavioral.accuracy_10.shift();
+
+    renderResultado(won,total,js.score,prize,false);
+    goTo('resultado');
+  }catch(e){
+    console.error('endJogo error:',e);
+    showToast('Erro de conexão ao finalizar','error');
+  }
+}
+
+function endJogoFree(){
+  const js=APP.jogoState,sala=APP.currentSala;
+  const total=js.corretas;
+  let prize=0,won=false;
+  if(total>=4){won=true;prize=sala?(total===5?sala.premio:Math.floor(sala.premio*0.6)):0;APP.freeBalance+=prize;}
+  APP.stats.jogos++;saveLocalCache();
+  renderResultado(won,total,js.score,prize,true);
+  goTo('resultado');
+}
+
+function renderResultado(won,total,score,prize,isFree){
+  document.getElementById('resEmoji').textContent=won?'🏆':(total>=2?'😤':'😔');
+  document.getElementById('resTitulo').textContent=won?'VITÓRIA!':(total>=2?'QUASE LÁ!':'DERROTA');
+  document.getElementById('resSub').textContent=won?(isFree?'🎓 Modo treino — sem transacção real':'Excelente desempenho, campeão!'):(total>=2?'Estiveste perto! Tenta de novo.':'Não desistas, pratica mais!');
+  document.getElementById('resCorretas').textContent=total+'/5';
+  document.getElementById('resPontos').textContent=score.toLocaleString();
+  document.getElementById('resPosicao').textContent=won?(total===5?'1º LUGAR':'2º LUGAR'):(3+Math.random()*5|0)+'º LUGAR';
+  document.getElementById('resPrize').textContent=prize.toLocaleString()+' Kz'+(isFree?' (virtual)':'');
+  document.getElementById('resPrizeBox').style.opacity=won?'1':'0.4';
+}
+
+function jogarNovamente(){if(APP.currentSala)enterSala(APP.currentSala.id);else goTo('salas');}
+
+// ═══════════════════════════════════════
+//  MARKETPLACE
+// ═══════════════════════════════════════
+function renderMarket(){
+  updateBalanceUI();
+  const grid=document.getElementById('booksGrid');if(!grid)return;
+  grid.innerHTML=APP.books.map(b=>{
+    const isAG=b.autor==='Adelino Graça';
+    return`<div class="book-card${isAG?' book-card-featured':''}" onclick="buyBook('${b.id}')">
+      <div class="book-cover-wrap">${buildBookCoverSVG(b)}${isAG?'<div class="book-featured-badge">★ DESTAQUE</div>':''}</div>
+      <div class="book-info"><div class="book-title">${b.titulo}</div><div class="book-author">${b.autor}</div>
+      <div class="book-footer"><div class="book-price">${b.preco.toLocaleString()} Kz</div><button class="book-btn" onclick="event.stopPropagation();buyBook('${b.id}')">ADQUIRIR</button></div></div></div>`;
+  }).join('');
+}
+function buildBookCoverSVG(b){
+  const c1=b.cor,c2=b.cor2,id=b.id;
+  const tw=b.titulo.split(' ');const l1=tw.slice(0,Math.ceil(tw.length/2)).join(' ');const l2=tw.slice(Math.ceil(tw.length/2)).join(' ');
+  const init=b.autor.split(' ').map(x=>x[0]).join('').substring(0,2);const isAG=b.autor==='Adelino Graça';
+  return`<svg viewBox="0 0 160 213" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:6px 8px 8px 6px;"><defs><linearGradient id="bg_${id}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient><linearGradient id="gold_${id}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#B8960C"/><stop offset="50%" stop-color="#F0D060"/><stop offset="100%" stop-color="#B8960C"/></linearGradient><filter id="bl_${id}"><feGaussianBlur stdDeviation="8"/></filter></defs><rect width="160" height="213" fill="url(#bg_${id})" rx="2"/><circle cx="110" cy="60" r="60" fill="${c2}" opacity="0.25" filter="url(#bl_${id})"/><rect x="12" y="14" width="136" height="1.5" fill="url(#gold_${id})" rx="1"/><rect x="12" y="197" width="136" height="1.5" fill="url(#gold_${id})" rx="1"/><rect width="14" height="213" fill="rgba(0,0,0,0.3)" rx="2"/><rect x="14" y="0" width="1" height="213" fill="rgba(212,175,55,0.3)"/>${isAG?`<polygon points="80,28 84,36 93,36 86,41 89,50 80,44 71,50 74,41 67,36 76,36" fill="#D4AF37" opacity="0.9"/>`:`<circle cx="80" cy="38" r="14" fill="rgba(212,175,55,0.12)" stroke="rgba(212,175,55,0.35)" stroke-width="1"/><text x="80" y="43" font-family="Georgia,serif" font-size="11" font-weight="bold" fill="#D4AF37" text-anchor="middle">${init}</text>`}<text x="80" y="${isAG?72:78}" font-family="Georgia,serif" font-size="${l1.length>10?11:13}" font-weight="bold" fill="#FAFAFA" text-anchor="middle">${l1.toUpperCase()}</text>${l2?`<text x="80" y="${isAG?89:95}" font-family="Georgia,serif" font-size="${l2.length>10?11:13}" font-weight="bold" fill="#FAFAFA" text-anchor="middle">${l2.toUpperCase()}</text>`:''}<rect x="40" y="${isAG?102:108}" width="80" height="1" fill="url(#gold_${id})" rx="1" opacity="0.7"/><circle cx="80" cy="${isAG?145:148}" r="32" fill="rgba(255,255,255,0.04)" stroke="rgba(212,175,55,0.15)" stroke-width="1"/><circle cx="80" cy="${isAG?145:148}" r="20" fill="rgba(255,255,255,0.03)" stroke="rgba(212,175,55,0.2)" stroke-width="0.8"/><circle cx="80" cy="${isAG?145:148}" r="8" fill="rgba(212,175,55,0.15)" stroke="rgba(212,175,55,0.4)" stroke-width="1"/><text x="80" y="185" font-family="Georgia,serif" font-size="9" fill="rgba(240,208,96,0.8)" text-anchor="middle" letter-spacing="1">${b.autor.toUpperCase()}</text></svg>`;
+}
+function buyBook(id){
+  const book=APP.books.find(b=>b.id===id);if(!book)return;
+  const msg=encodeURIComponent(`Olá, quero adquirir "${book.titulo}" de ${book.autor}. Preço: ${book.preco} Kz. ID: ${APP.userId}`);
+  window.open(`https://wa.me/244937876711?text=${msg}`,'_blank');
+}
+
+// ═══════════════════════════════════════
+//  ADMIN — GOD MODE V5
+//  STAGE 4: 15-TAP TRIGGER (300ms max delay)
+// ═══════════════════════════════════════
+function handleLogoTap(){
+  const now=Date.now();
+  const taps=APP.admin.tapTimestamps;
+
+  // Reset if gap > 300ms from last tap
+  if(taps.length>0 && (now-taps[taps.length-1])>300){
+    APP.admin.tapTimestamps=[];
+  }
+
+  APP.admin.tapTimestamps.push(now);
+
+  // Check for 15 rapid taps
+  if(APP.admin.tapTimestamps.length>=15){
+    APP.admin.tapTimestamps=[];
+    if(APP.admin.authenticated){goTo('admin');}
+    else{openAdminModal();}
+  }
+}
+
+// Bind logo taps — invisible to regular users
+document.getElementById('logoAluna').addEventListener('click',handleLogoTap);
+document.getElementById('logoAluna2').addEventListener('click',handleLogoTap);
+
+function switchAdminTab(tab){
+  APP.adminTab=tab;
+  document.querySelectorAll('.admin-tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-panel').forEach(el=>el.classList.remove('active'));
+  const order=['dashboard','users','questions','gamecontrol','marketplace','ledger','system'];
+  const tabs=document.querySelectorAll('.admin-tab');
+  const idx=order.indexOf(tab);if(tabs[idx])tabs[idx].classList.add('active');
+  const panel=document.getElementById('atab-'+tab);if(panel)panel.classList.add('active');
+  if(tab==='ledger')loadAdminTxLog();
+}
+
+function renderAdmin(){
+  switchAdminTab(APP.adminTab);refreshDashboard();
+  renderAdminSalas();renderAdminBooks();renderAdminQuestions();
+  const mt=document.getElementById('maintenanceToggle');if(mt)mt.classList.toggle('on',APP.maintenance);
+  const tt=document.getElementById('themeToggle');if(tt)tt.classList.toggle('on',document.body.classList.contains('theme-light'));
+  const uid=document.getElementById('adm-uid');if(uid)uid.textContent=APP.userId;
+  const ubal=document.getElementById('adm-ubal');if(ubal)ubal.textContent=APP.balance.toLocaleString('pt-AO')+' Kz';
+}
+function refreshDashboard(){
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  s('adm-stat-jogos',APP.stats.jogos);s('adm-stat-vit',APP.stats.vitorias);
+  s('adm-stat-ganhos',APP.stats.ganhos.toLocaleString('pt-AO')+' Kz');
+  s('adm-stat-livros',APP.books.length);s('adm-stat-salas',APP.salas.filter(x=>!x.locked).length+'/'+APP.salas.length);
+  s('adm-stat-perguntas',PERGUNTAS_DB.length);
+}
+function renderAdminSalas(){
+  const c=document.getElementById('adminSalasList');if(!c)return;
+  c.innerHTML=APP.salas.map(s=>`<div class="sala-lock-row"><div><div class="sala-lock-name">${s.icon} ${s.nome}</div><div class="sala-lock-price">${s.preco.toLocaleString()} Kz · ${s.premio.toLocaleString()} Kz</div></div><div class="toggle ${s.locked?'':'on'}" onclick="toggleSala('${s.id}')"></div></div>`).join('');
+}
+function renderAdminBooks(){
+  const c=document.getElementById('adminBooksList');if(!c)return;
+  c.innerHTML=APP.books.map(b=>`<div class="admin-book-item"><div class="admin-book-name">${b.titulo} <span style="font-size:9px;color:var(--gold4);">${b.autor}</span></div><div class="admin-book-price">${b.preco.toLocaleString()} Kz</div><div class="admin-book-del" onclick="removeBook('${b.id}')">×</div></div>`).join('');
+}
+function renderAdminQuestions(){
+  const c=document.getElementById('adminQList');if(!c)return;
+  document.getElementById('adm-q-count').textContent=PERGUNTAS_DB.length;
+  c.innerHTML=PERGUNTAS_DB.slice(0,10).map((q,i)=>`<div class="admin-q-item"><div class="admin-q-cat">${q.cat} · D${q.diff||'?'} · #${i+1}</div><div class="admin-q-text">${q.p}</div><div class="admin-q-answers">${q.ops.map((op,j)=>`<div class="admin-q-ans${j===q.r?' correct-ans':''}">${['A','B','C','D'][j]}. ${op}</div>`).join('')}</div></div>`).join('')+`<div class="admin-note">10 de ${PERGUNTAS_DB.length} perguntas.</div>`;
+}
+function adminAddQuestion(){
+  const cat=document.getElementById('adminQCat').value;const t=document.getElementById('adminQText').value.trim();
+  const a=document.getElementById('adminQA').value.trim();const b=document.getElementById('adminQB').value.trim();
+  const c=document.getElementById('adminQC').value.trim();const d=document.getElementById('adminQD').value.trim();
+  if(!t||!a||!b||!c||!d){showToast('Preenche todos os campos','error');return;}
+  PERGUNTAS_DB.push({cat,p:t,ops:[a,b,c,d],r:0,diff:2});
+  renderAdminQuestions();
+  ['adminQText','adminQA','adminQB','adminQC','adminQD'].forEach(id=>document.getElementById(id).value='');
+  showToast('Pergunta adicionada — banco: '+PERGUNTAS_DB.length);
+}
+
+// V5: Admin balance adjust via RPC (ledger, not UPDATE)
+async function adminAdjBalance(){
+  const val=parseInt(document.getElementById('adminBalInput').value);
+  if(isNaN(val)||val===0){showToast('Valor inválido','error');return;}
+  try{
+    const{data,error}=await db.rpc('rpc_admin_adjust',{p_user_id:APP.userId,p_amount:val,p_description:'Ajuste admin V5'});
+    if(error){showToast('Erro RPC','error');return;}
+    APP.balance=data.balance;
+    updateBalanceUI();saveLocalCache();
+    const ubal=document.getElementById('adm-ubal');if(ubal)ubal.textContent=APP.balance.toLocaleString('pt-AO')+' Kz';
+    document.getElementById('adminBalInput').value='';
+    showToast((val>0?'+':'')+val+' Kz — Novo saldo: '+APP.balance.toLocaleString('pt-AO')+' Kz');
+  }catch(e){showToast('Erro de conexão','error');}
+}
+
+// V5: Ledger viewer
+async function loadAdminTxLog(){
+  const log=document.getElementById('adminTxLog');
+  try{
+    const{data,error}=await db.rpc('rpc_get_transactions',{p_user_id:APP.userId,p_limit:50});
+    if(error||!data){log.innerHTML='<div class="admin-note">Sem transacções.</div>';return;}
+    log.innerHTML=data.map(tx=>{
+      const isCredit=tx.amount>0;
+      const time=new Date(tx.created_at).toLocaleString('pt-AO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      return`<div class="admin-tx-item"><div class="admin-tx-amount ${isCredit?'credit':'debit'}">${isCredit?'+':''}${tx.amount.toLocaleString()} Kz</div><div class="admin-tx-desc">${tx.type}: ${tx.description||''}</div><div class="admin-tx-time">${time}</div></div>`;
+    }).join('');
+  }catch(e){log.innerHTML='<div class="admin-note">Erro ao carregar ledger.</div>';}
+}
+
+async function applyGameParams(){
+  const t=parseInt(document.getElementById('paramTimer')?.value||12);
+  const l=parseInt(document.getElementById('paramLobby')?.value||7);
+  const bp=parseInt(document.getElementById('paramBasePoints')?.value||100);
+  const tb=parseInt(document.getElementById('paramTimeBonus')?.value||10);
+  APP.gameParams={timerVal:t,lobbyVal:l,basePoints:bp,timeBonus:tb};
+  try{await db.from('app_config').upsert({key:'game_params',value:APP.gameParams},{onConflict:'key'});}catch(e){}
+}
+async function toggleSala(id){
+  const s=APP.salas.find(x=>x.id===id);if(!s)return;s.locked=!s.locked;renderAdminSalas();
+  try{await db.from('salas_config').upsert({id:s.id,locked:s.locked},{onConflict:'id'});}catch(e){}
+}
+function toggleTheme(){document.body.classList.toggle('theme-light');document.getElementById('themeToggle')?.classList.toggle('on');showToast('Tema alterado');}
+function toggleMaintenance(){APP.maintenance=!APP.maintenance;document.getElementById('maintenanceToggle')?.classList.toggle('on',APP.maintenance);document.getElementById('maintenanceOverlay')?.classList.toggle('active',APP.maintenance);showToast(APP.maintenance?'Manutenção ACTIVADA':'Manutenção DESACTIVADA');}
+function addTickerMsg(){const inp=document.getElementById('adminTickerInput');if(!inp||!inp.value.trim())return;const ti=document.getElementById('tickerInner');if(ti){const s=document.createElement('span');s.className='ticker-item';s.innerHTML=`📢 ${inp.value.trim()} <span class="ticker-sep">◆</span>`;ti.appendChild(s.cloneNode(true));ti.appendChild(s.cloneNode(true));}inp.value='';showToast('Mensagem adicionada');}
+async function addBook(){
+  const t=document.getElementById('adminBookTitle').value.trim();const a=document.getElementById('adminBookAuthor').value.trim();const p=parseInt(document.getElementById('adminBookPrice').value);
+  if(!t||!a||!p){showToast('Preenche tudo','error');return;}
+  const cs=[['#1a0a2e','#6B21A8'],['#0a1a0a','#166534'],['#1a1200','#92400E'],['#0a0a1a','#1E3A5F']];const c=cs[Math.random()*cs.length|0];
+  const nb={id:'b'+Date.now(),titulo:t,autor:a,preco:p,cor:c[0],cor2:c[1]};APP.books.push(nb);renderAdminBooks();
+  ['adminBookTitle','adminBookAuthor','adminBookPrice'].forEach(id=>document.getElementById(id).value='');
+  try{await db.from('books').insert(nb);showToast('Livro adicionado');}catch(e){showToast('Erro','error');}
+}
+async function removeBook(id){APP.books=APP.books.filter(b=>b.id!==id);renderAdminBooks();try{await db.from('books').delete().eq('id',id);showToast('Removido');}catch(e){}}
+
+// ═══════════════════════════════════════
+//  ADMIN AUTH
+// ═══════════════════════════════════════
+function openAdminModal(){document.getElementById('adminModal').classList.add('active');document.getElementById('adminEmailInput').value='';document.getElementById('adminPwdInput').value='';document.getElementById('loginError').classList.remove('show');document.getElementById('loginSpinner').classList.remove('show');document.getElementById('loginBtn').disabled=false;regProcess(setTimeout(()=>document.getElementById('adminEmailInput').focus(),100));}
+function closeAdminModal(){document.getElementById('adminModal').classList.remove('active');}
+async function adminLogin(){
+  const email=document.getElementById('adminEmailInput').value.trim();const pwd=document.getElementById('adminPwdInput').value;
+  const err=document.getElementById('loginError');const spin=document.getElementById('loginSpinner');const btn=document.getElementById('loginBtn');
+  err.classList.remove('show');if(!email||!pwd){err.textContent='Preenche e-mail e senha.';err.classList.add('show');return;}
+  btn.disabled=true;spin.classList.add('show');
+  try{const{data,error}=await db.auth.signInWithPassword({email,password:pwd});
+    if(error){err.textContent='Credenciais inválidas.';err.classList.add('show');spin.classList.remove('show');btn.disabled=false;return;}
+    APP.admin.authenticated=true;APP.admin.user=data.user;closeAdminModal();showToast('Login admin OK','success');goTo('admin');
+  }catch(e){err.textContent='Erro de conexão.';err.classList.add('show');}finally{spin.classList.remove('show');btn.disabled=false;}
+}
+async function adminLogout(){await db.auth.signOut();APP.admin.authenticated=false;APP.admin.user=null;showToast('Sessão encerrada');goTo('home');}
+async function checkAdminSession(){try{const{data:{session}}=await db.auth.getSession();if(session&&session.user){APP.admin.authenticated=true;APP.admin.user=session.user;}}catch(e){}}
+
+// ═══════════════════════════════════════
+//  FINANCEIRO
+// ═══════════════════════════════════════
+function handleDeposit(){const msg=encodeURIComponent(`RECARGA_ALUNA_${APP.userId}`);window.open(`https://wa.me/244937876711?text=${msg}`,'_blank');}
+function handleWithdraw(){if(APP.balance<=0){showToast('Saldo insuficiente','error');return;}const msg=encodeURIComponent(`LEVANTAMENTO_ALUNA_${APP.userId}_SALDO_${APP.balance}Kz`);window.open(`https://wa.me/244937876711?text=${msg}`,'_blank');}
+
+// ═══════════════════════════════════════
+//  FREE MODE
+// ═══════════════════════════════════════
+function enterCompetitionMode(){APP.freeMode=false;document.getElementById('freeModeSalasBar')?.classList.remove('active');goTo('salas');}
+function enterFreeMode(){APP.freeMode=true;APP.freeBalance=2000;document.getElementById('freeModeSalasBar')?.classList.add('active');showToast('Modo gratuito — 2.000 Kz virtuais','success');goTo('salas');}
+function toggleSecondaryActions(){document.getElementById('secondaryToggle')?.classList.toggle('open');document.getElementById('secondaryGrid')?.classList.toggle('open');}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer=null;
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ═══════════════════════════════════════
+//  ENTER KEY ADMIN
+// ═══════════════════════════════════════
+document.getElementById('adminPwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin();});
+document.getElementById('adminEmailInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('adminPwdInput').focus();});
+
+// ═══════════════════════════════════════
+//  PRELOADER + INIT — V5
+// ═══════════════════════════════════════
+(async function bootApp(){
+  const bar=document.getElementById('preloaderBar');
+  const msgEl=document.getElementById('preloaderMsg');
+  function setP(pct,msg){bar.style.width=pct+'%';if(msg)msgEl.textContent=msg;}
+
+  try{
+    setP(10,'A INICIALIZAR SISTEMA...');
+    const cached=localStorage.getItem('aluna_uid');
+    APP.userId=cached||genUserId();
+    if(!cached)localStorage.setItem('aluna_uid',APP.userId);
+
+    setP(25,'A CONECTAR AO SERVIDOR...');
+    await loadData();
+    setP(50,'A REGISTAR JOGADOR...');
+
+    // V5: Register via RPC (handles signup bonus via ledger)
+    try{
+      const{data}=await db.rpc('rpc_register_player',{p_user_id:APP.userId});
+      if(data) APP.balance=data.balance||0;
+    }catch(e){
+      const had=localStorage.getItem('aluna_balance')!==null;
+      if(!had) APP.balance=2000;
+    }
+
+    setP(70,'A SINCRONIZAR SALDO...');
+    await syncBalanceFromServer();
+
+    setP(85,'A VERIFICAR SESSÃO ADMIN...');
+    await checkAdminSession();
+
+    saveLocalCache();updateBalanceUI();
+    setP(100,'PRONTO.');
+    await new Promise(r=>setTimeout(r,400));
+    goTo('home');
+  }catch(err){
+    console.error('Boot error:',err);
+    loadLocalCache();
+    if(!APP.userId){APP.userId=genUserId();localStorage.setItem('aluna_uid',APP.userId);}
+    if(localStorage.getItem('aluna_balance')===null) APP.balance=2000;
+    updateBalanceUI();setP(100,'PRONTO (OFFLINE).');
+    await new Promise(r=>setTimeout(r,600));
+    goTo('home');
+  }
+})();
+</script>
+</body>
+</html>
